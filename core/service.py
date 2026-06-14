@@ -22,6 +22,12 @@ try:
 except ImportError:
     PSUTIL_AVAILABLE = False
 
+try:
+    from hacking_brain import HackingBrain
+    HACKING_AVAILABLE = True
+except:
+    HACKING_AVAILABLE = False
+
 from core.agent import JarvisAgents
 from core.memory import VectorMemory
 from core.brain import AdvancedBrain
@@ -34,6 +40,7 @@ class SelfAwareAgent:
         self.agents = JarvisAgents()
         self.optimizer = Optimizer()
         self.brain = AdvancedBrain()
+        self.hacking = HackingBrain() if HACKING_AVAILABLE else None
 
     def speak(self, text):
         print("JARVIS:", text)
@@ -49,6 +56,11 @@ class SelfAwareAgent:
     def process_command(self, cmd):
         cmd_lower = cmd.lower()
         
+        # Route to HackingBrain for pentesting commands
+        if "nmap" in cmd_lower or "exploit" in cmd_lower or "recon" in cmd_lower or cmd_lower.startswith("hacking"):
+            if self.hacking:
+                response = self.hacking.execute(cmd.replace("hacking", "").strip() or "help")
+                return response if response else "Hacking module ready."
         if "forex" in cmd_lower or "trade" in cmd_lower or "trading" in cmd_lower or "eurusd" in cmd_lower or "gbpusd" in cmd_lower or "usdjpy" in cmd_lower:
             response = self.brain.process_command(cmd)
         elif "device" in cmd_lower or "control" in cmd_lower or "execute" in cmd_lower or "lights" in cmd_lower or "thermostat" in cmd_lower:
