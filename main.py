@@ -12,6 +12,12 @@ import json
 import sys
 sys.path.append('.')
 
+try:
+    from hacking_brain import HackingBrain
+    HACKING_AVAILABLE = True
+except:
+    HACKING_AVAILABLE = False
+
 from core.agent import JarvisAgents
 from core.memory import VectorMemory
 from core.brain import AdvancedBrain
@@ -54,6 +60,7 @@ class SelfAwareAgent:
         self.agents = JarvisAgents()
         self.optimizer = Optimizer()
         self.brain = AdvancedBrain()
+        self.hacking = HackingBrain() if HACKING_AVAILABLE else None
 
     def speak(self, text):
         print("JARVIS:", text)
@@ -87,6 +94,10 @@ class SelfAwareAgent:
         cmd_lower = cmd.lower()
         
         # Route to AdvancedBrain for forex, device, learn commands
+        if "hacking" in cmd_lower or "recon" in cmd_lower or "exploit" in cmd_lower or cmd_lower.startswith("nmap") or cmd_lower.startswith("msf"):
+            if self.hacking:
+                response = self.hacking.execute(cmd)
+                return response if response else "Hacking module processed."
         if any(kw in cmd_lower for kw in ["forex", "trade", "trading", "eurusd", "gbpusd", "usdjpy", "device", "execute", "learn ", "control "]):
             response = self.brain.process_command(cmd)
         elif "time" in cmd_lower or "clock" in cmd_lower:
