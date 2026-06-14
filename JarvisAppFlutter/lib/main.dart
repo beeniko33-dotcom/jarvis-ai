@@ -5,13 +5,12 @@ import 'screens/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Request permissions for Android voice assistant
   await _requestPermissions();
   runApp(const ProviderScope(child: JarvisApp()));
 }
 
 Future<void> _requestPermissions() async {
-  await [Permission.microphone, Permission.speech, Permission.notification].request();
+  await [Permission.microphone, Permission.speech].request();
 }
 
 class JarvisApp extends StatelessWidget {

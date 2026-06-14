@@ -1,0 +1,10 @@
+{
+  "config": {
+    "properties": {
+      "xsi:type": "String",
+      "name": "preview"
+    },
+    "type": "String",
+    "value": "Preview"
+  }
+}

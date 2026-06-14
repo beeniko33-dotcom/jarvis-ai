@@ -1,0 +1,2 @@
+rootProject.name = "jarvis_app_flutter"
+include ':app'

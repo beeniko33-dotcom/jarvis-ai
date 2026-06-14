@@ -1,0 +1,20 @@
+{
+  "knowledge": {
+    "learned_1781456413": "market volatility is key for entry",
+    "learned_1781459001": "volatility drives price action",
+    "learned_1781460221": "momentum follows volatility"
+  },
+  "confidence": {
+    "learned_1781456413": 0.7,
+    "learned_1781459001": 0.8,
+    "learned_1781460221": 0.8
+  },
+  "forex_style": "aggressive",
+  "updated": "2026-06-14T18:03:41.265059",
+  "traits": {
+    "wit": 0.9,
+    "confidence": 0.85,
+    "analytical": 0.95,
+    "passion_for_trading": 1.0
+  }
+}

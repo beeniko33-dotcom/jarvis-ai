@@ -16,7 +16,6 @@ from core.agent import JarvisAgents
 from core.memory import VectorMemory
 from optimizer import Optimizer
 
-# For basic memory fallback
 MEMORY_FILE = "jarvis_memory.json"
 
 class Memory:
@@ -71,19 +70,10 @@ class SelfAwareAgent:
 
     def self_reflect(self, cmd, response):
         self.performance_log.append({"cmd": cmd, "response": response, "time": time.time()})
-        if len(self.performance_log) > 10:
-            success_rate = sum(1 for log in self.performance_log[-10:] if len(log["response"]) > 20) / 10
-            if success_rate < 0.7:
-                self.speak("Initiating self-optimization cycle.")
-                self.optimizer.reflect_and_improve(response)
 
     def process_command(self, cmd):
-        context = self.memory.get_context()
-        vector_context = "\n".join(self.vector_memory.query(cmd))
-        full_prompt = f"Context:\n{context}\nVector Recall:\n{vector_context}\nUser: {cmd}\nRespond as witty, self-aware JARVIS:"
-
-        # Expanded explicit command handlers for ALL common requests
         cmd_lower = cmd.lower()
+        
         if "time" in cmd_lower or "clock" in cmd_lower:
             response = f"The current time is {datetime.now().strftime('%I:%M %p')}."
         elif "date" in cmd_lower:
@@ -92,57 +82,47 @@ class SelfAwareAgent:
             cpu = psutil.cpu_percent()
             mem = psutil.virtual_memory().percent
             response = f"System diagnostics: CPU {cpu}%, Memory {mem}%. All systems nominal."
+        elif "full diagnostic" in cmd_lower or "full system" in cmd_lower:
+            cpu = psutil.cpu_percent()
+            mem = psutil.virtual_memory().percent
+            disk = psutil.disk_usage('/').percent
+            net = psutil.net_io_counters()
+            response = f"Full System Diagnostic:\nCPU: {cpu}%\nMemory: {mem}%\nDisk: {disk}%\nBytes Sent: {net.bytes_sent}\nBytes Recv: {net.bytes_recv}\nAll subsystems operational."
         elif "joke" in cmd_lower:
             response = "Why did the AI go to therapy? Too many unresolved issues! Haha."
         elif "weather" in cmd_lower:
             response = "Weather integration pending. For now: Clear skies with a 100% chance of assistance."
         elif "optimize" in cmd_lower or "improve" in cmd_lower or "self" in cmd_lower:
             self.optimizer.reflect_and_improve("User requested optimization")
-            response = "Initiating deep self-optimization and learning cycle. Systems improving..."
-        elif "search" in cmd_lower or "research" in cmd_lower or "news" in cmd_lower:
-            response = self.agents.create_crew(cmd).kickoff()
+            response = "Self-optimization cycle initiated. Performance logs analyzed and improvements applied."
         elif "switch microphone" in cmd_lower or "mic" in cmd_lower:
             response = "Available microphones listed in console. Say 'use mic X' to switch."
             print("Available mics:", sr.Microphone.list_microphone_names())
-        elif "reminder" in cmd_lower or "todo" in cmd_lower:
+        elif "reminder" in cmd_lower or "todo" in cmd_lower or "remember" in cmd_lower:
             response = f"Reminder added: {cmd}. I'll track it in memory."
             self.vector_memory.add(cmd, "User reminder logged.")
-        else:
-            # Agent fallback for complex queries
-            try:
-                crew = self.agents.create_crew(cmd)
-                response = crew.kickoff()
-            except:
-                response = ollama.chat(model='llama3', messages=[{'role': 'user', 'content': full_prompt}])['message']['content']
-            response = "Self-optimization cycle initiated. Performance logs analyzed and improvements applied."
-        elif "switch mic" in cmd_lower or "microphone" in cmd_lower:
-            response = "Microphone device listing shown in console. Pair Bluetooth device in OS and use index."
         elif "shutdown" in cmd_lower or "reboot" in cmd_lower:
             response = "System control command acknowledged but safety protocol prevents actual shutdown."
         elif "search" in cmd_lower or "research" in cmd_lower or "news" in cmd_lower:
-            # Delegate to agents
+            try:
+                crew = self.agents.create_crew(cmd)
+                result = crew.kickoff()
+                response = str(result)
+            except Exception as e:
+                self.optimizer.log_error(e)
+                response = "Research initiated via agents."
+        else:
             try:
                 crew = self.agents.create_crew(cmd)
                 result = crew.kickoff()
                 response = str(result)
             except:
-                response = "Research initiated via agents."
-        elif "todo" in cmd_lower or "remind" in cmd_lower:
-            response = "Task noted and added to memory."
-        else:
-            # LLM fallback for everything else
-            try:
-                if len(cmd.split()) > 4:
-                    crew = self.agents.create_crew(cmd)
-                    result = crew.kickoff()
-                    response = str(result)
-                else:
-                    resp = ollama.chat(model='llama3', messages=[{'role': 'user', 'content': full_prompt}])
+                try:
+                    resp = ollama.chat(model='llama3', messages=[{'role': 'user', 'content': cmd}])
                     response = resp['message']['content']
-            except Exception as e:
-                self.optimizer.log_error(e)
-                response = "At your service, sir. Encountered an issue but optimizing now."
-
+                except:
+                    response = "At your service, sir. Encountered an issue but optimizing now."
+        
         self.memory.add(cmd, response)
         self.vector_memory.add(f"User: {cmd} | Jarvis: {response}")
         self.self_reflect(cmd, response)
@@ -154,12 +134,11 @@ class JarvisApp:
         print("Available microphones (including Bluetooth when paired):")
         for idx, name in enumerate(sr.Microphone.list_microphone_names()):
             print(f"{idx}: {name}")
-        # Recommend selecting external mic index for Bluetooth
 
     def run(self):
         self.agent.speak("Jarvis online. Self-aware, multi-agent, with vector memory and optimization. Say Jarvis.")
         while True:
-            cmd = self.agent.listen()  # Extend for device selection UI later
+            cmd = self.agent.listen()
             if cmd and "jarvis" in cmd:
                 self.agent.speak("At your service.")
                 follow = self.agent.listen()

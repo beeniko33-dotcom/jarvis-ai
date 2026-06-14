@@ -37,3 +37,26 @@ ModuleNotFoundError: No module named 'crewai'
 2026-06-13 16:04:39,636 INFO uvicorn imported, starting server
 2026-06-13 16:13:48,104 WARNING SelfAwareAgent unavailable: [91mYour system has an unsupported version of sqlite3. Chroma                     requires sqlite3 >= 3.35.0.[0m
 [94mPlease visit                     https://docs.trychroma.com/troubleshooting#sqlite to learn how                     to upgrade.[0m
+2026-06-14 12:42:43,520 INFO Starting bridge using /home/codespace/.python/current/bin/python
+2026-06-14 12:42:45,986 INFO uvicorn imported, starting server
+2026-06-14 12:43:19,299 WARNING SelfAwareAgent unavailable or crewai missing; using fallback agent
+2026-06-14 12:48:45,800 INFO Starting bridge using /home/codespace/.python/current/bin/python
+2026-06-14 12:48:46,356 INFO uvicorn imported, starting server
+2026-06-14 12:49:01,508 WARNING SelfAwareAgent unavailable or crewai missing; using fallback agent
+2026-06-14 12:49:05,617 WARNING SelfAwareAgent unavailable; using minimal fallback
+2026-06-14 12:52:10,345 INFO Starting bridge using /home/codespace/.python/current/bin/python
+2026-06-14 12:52:10,914 INFO uvicorn imported, starting server
+2026-06-14 12:52:52,011 WARNING SelfAwareAgent unavailable or crewai missing; using fallback agent
+2026-06-14 12:52:55,789 WARNING SelfAwareAgent unavailable; using minimal fallback
+2026-06-14 12:53:48,373 INFO Starting bridge using /home/codespace/.python/current/bin/python
+2026-06-14 12:53:49,030 INFO uvicorn imported, starting server
+2026-06-14 12:54:11,035 WARNING SelfAwareAgent unavailable or crewai missing; using fallback agent
+2026-06-14 12:54:14,965 WARNING SelfAwareAgent unavailable; using minimal fallback
+2026-06-14 12:59:10,307 INFO Starting bridge using /home/codespace/.python/current/bin/python
+2026-06-14 12:59:10,931 INFO uvicorn imported, starting server
+2026-06-14 12:59:19,918 WARNING SelfAwareAgent unavailable or crewai missing; using fallback agent
+2026-06-14 12:59:23,363 WARNING SelfAwareAgent unavailable; using minimal fallback
+2026-06-14 13:03:45,140 INFO Starting bridge using /home/codespace/.python/current/bin/python
+2026-06-14 13:03:45,795 INFO uvicorn imported, starting server
+2026-06-14 13:04:40,544 WARNING SelfAwareAgent unavailable or crewai missing; using fallback agent
+2026-06-14 13:04:43,682 WARNING SelfAwareAgent unavailable; using minimal fallback

@@ -1,15 +1,13 @@
-import speech_recognition as sr # pyright: ignore[reportMissingImports]
-import pyttsx3 # type: ignore
+import speech_recognition as sr
+import pyttsx3
 import psutil
 import pygame
 import time
 import threading
-import requests
 import ollama
 from datetime import datetime
 import random
 
-# Initialize
 engine = pyttsx3.init()
 recognizer = sr.Recognizer()
 
@@ -17,7 +15,6 @@ pygame.init()
 screen = pygame.display.set_mode((800, 600))
 pygame.display.set_caption("JARVIS AI")
 
-# Particle simulation for orb
 class Particle:
     def __init__(self, x=400, y=300, speed=4):
         self.x = x
@@ -59,20 +56,27 @@ def get_system_diagnostics():
     mem = psutil.virtual_memory().percent
     return f"CPU: {cpu}%, Memory: {mem}%"
 
-def run_diagnostics():
+def run_full_diagnostics():
     speak("Running full system diagnostics.")
-    diag = get_system_diagnostics()
+    cpu = psutil.cpu_percent()
+    mem = psutil.virtual_memory().percent
+    disk = psutil.disk_usage('/').percent
+    diag = f"Full Diagnostics - CPU: {cpu}%, Memory: {mem}%, Disk: {disk}%"
     speak(diag)
-    for i in range(10, 101, 20):
-        print(f"Diagnostics: {i}%")
-        time.sleep(0.5)
+    print("Full system diagnostic completed.")
     speak("All systems nominal.")
 
 def process_command(command):
-    if "diagnostics" in command:
-        run_diagnostics()
+    if "full diagnostic" in command or "full system" in command or "complete diagnostic" in command:
+        run_full_diagnostics()
+    elif "diagnostics" in command or "status" in command or "cpu" in command or "ram" in command:
+        speak(get_system_diagnostics())
     elif "time" in command:
         speak(datetime.now().strftime("%I:%M %p"))
+    elif "date" in command:
+        speak(datetime.now().strftime("%A, %B %d, %Y"))
+    elif "joke" in command:
+        speak("Why did the AI go to therapy? Too many unresolved issues! Haha.")
     elif "exit" in command or "quit" in command:
         global running
         running = False

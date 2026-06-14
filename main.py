@@ -14,6 +14,7 @@ sys.path.append('.')
 
 from core.agent import JarvisAgents
 from core.memory import VectorMemory
+from core.brain import AdvancedBrain
 from optimizer import Optimizer
 
 # For basic memory fallback
@@ -52,6 +53,7 @@ class SelfAwareAgent:
         self.tts_engine = pyttsx3.init()
         self.agents = JarvisAgents()
         self.optimizer = Optimizer()
+        self.brain = AdvancedBrain()
 
     def speak(self, text):
         print("JARVIS:", text)
@@ -100,19 +102,25 @@ class SelfAwareAgent:
             self.optimizer.reflect_and_improve("User requested optimization")
             response = "Self-optimization cycle initiated. Performance logs analyzed and improvements applied."
         elif "switch mic" in cmd_lower or "microphone" in cmd_lower:
-            response = "Microphone device listing shown in console. Pair Bluetooth device in OS and use index."
+            response = "Available microphones listed in console. Say 'use mic X' to switch."
+        elif "reminder" in cmd_lower or "todo" in cmd_lower:
+            response = f"Reminder added: {cmd}. I'll track it in memory."
+            self.vector_memory.add(cmd, "User reminder logged.")
+        elif "full diagnostic" in cmd_lower or "full system" in cmd_lower:
+            cpu = psutil.cpu_percent()
+            mem = psutil.virtual_memory().percent
+            disk = psutil.disk_usage('/').percent
+            response = f"Full System Diagnostic:\nCPU: {cpu}%\nMemory: {mem}%\nDisk: {disk}%\nAll subsystems operational."
         elif "shutdown" in cmd_lower or "reboot" in cmd_lower:
             response = "System control command acknowledged but safety protocol prevents actual shutdown."
         elif "search" in cmd_lower or "research" in cmd_lower or "news" in cmd_lower:
-            # Delegate to agents
             try:
                 crew = self.agents.create_crew(cmd)
                 result = crew.kickoff()
                 response = str(result)
-            except:
+            except Exception as e:
+                self.optimizer.log_error(e)
                 response = "Research initiated via agents."
-        elif "todo" in cmd_lower or "remind" in cmd_lower:
-            response = "Task noted and added to memory."
         else:
             # LLM fallback for everything else
             try:

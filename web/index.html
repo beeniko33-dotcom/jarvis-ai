@@ -3,25 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JARVIS HUD - Particle Orb</title>
+    <title>JARVIS - AI Assistant HUD</title>
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Arial', sans-serif; }
         canvas { display: block; }
-        #hud { position: absolute; top: 20px; left: 20px; color: #00ffcc; text-shadow: 0 0 10px #00ffcc; }
-        #status { position: absolute; bottom: 20px; left: 20px; color: #00ffcc; }
+        #hud { position: absolute; top: 20px; left: 20px; color: #00ffcc; text-shadow: 0 0 10px #00ffcc; pointer-events: none; }
+        #hud h1 { margin: 0; font-size: 2em; }
+        #diagnostics { margin-top: 10px; font-size: 0.9em; }
+        #features { position: absolute; top: 100px; left: 20px; font-size: 0.8em; color: #ff00ff; }
+        #chat { position: absolute; bottom: 140px; left: 20px; right: 20px; max-height: 300px; overflow-y: auto; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 5px; }
+        .message { margin: 5px 0; font-size: 0.9em; }
+        .user { color: #fff; }
+        .jarvis { color: #00ffcc; }
+        #input-area { position: absolute; bottom: 80px; left: 20px; right: 20px; display: flex; gap: 10px; }
+        #cmd { flex: 1; padding: 10px; background: rgba(0,255,204,0.1); border: 1px solid #00ffcc; color: #fff; border-radius: 3px; font-family: inherit; }
+        #send { padding: 10px 20px; background: #00ffcc; color: #000; border: none; border-radius: 3px; cursor: pointer; font-weight: bold; font-family: inherit; }
+        #status { position: absolute; bottom: 20px; left: 20px; font-size: 0.8em; color: #00ffcc; }
     </style>
 </head>
 <body>
     <div id="hud">
         <h1>JARVIS</h1>
-        <div id="diagnostics"></div>
+        <div id="diagnostics">Initializing...</div>
+        <div id="features">Forex: Active | Devices: Ready | Learning: On</div>
     </div>
-    <div id="status">System Online</div>
+    <div id="chat"></div>
+    <div id="input-area">
+        <input id="cmd" placeholder="Type your command..." autocomplete="off"/>
+        <button id="send">SEND</button>
+    </div>
+    <div id="status">System Online • WebSocket: Connecting...</div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
     <script>
-        // Three.js Particle HUD
-        let scene, camera, renderer;
-        let particles;
+        let scene, camera, renderer, particles;
         const particleCount = 2000;
 
         function init() {
@@ -31,43 +45,32 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
 
-            // Particle system
             const geometry = new THREE.BufferGeometry();
             const positions = new Float32Array(particleCount * 3);
             const colors = new Float32Array(particleCount * 3);
-            const sizes = new Float32Array(particleCount);
 
             for (let i = 0; i < particleCount * 3; i += 3) {
                 positions[i] = (Math.random() - 0.5) * 10;
                 positions[i + 1] = (Math.random() - 0.5) * 10;
                 positions[i + 2] = (Math.random() - 0.5) * 10;
-                
                 colors[i] = 0; colors[i+1] = 1; colors[i+2] = Math.random();
-                sizes[i/3] = Math.random() * 0.1 + 0.05;
             }
 
             geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
             geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-            geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
 
             const material = new THREE.PointsMaterial({
-                size: 0.05,
-                vertexColors: true,
-                transparent: true,
-                opacity: 0.8,
+                size: 0.05, vertexColors: true, transparent: true, opacity: 0.8,
                 blending: THREE.AdditiveBlending
             });
 
             particles = new THREE.Points(geometry, material);
             scene.add(particles);
-
             camera.position.z = 5;
 
-            // Animation
             function animate() {
                 requestAnimationFrame(animate);
                 particles.rotation.y += 0.001;
-                // Pulse effect
                 particles.scale.setScalar(1 + Math.sin(Date.now() * 0.001) * 0.05);
                 renderer.render(scene, camera);
             }
@@ -82,10 +85,60 @@
 
         init();
 
-        // Simulate diagnostics update
+        const chat = document.getElementById('chat');
+        const cmdInput = document.getElementById('cmd');
+        const sendBtn = document.getElementById('send');
+        const status = document.getElementById('status');
+
+        function addMessage(text, isUser) {
+            const div = document.createElement('div');
+            div.className = 'message ' + (isUser ? 'user' : 'jarvis');
+            div.textContent = (isUser ? 'You: ' : 'JARVIS: ') + text;
+            chat.appendChild(div);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        async function sendCommand() {
+            const cmd = cmdInput.value.trim();
+            if (!cmd) return;
+            addMessage(cmd, true);
+            cmdInput.value = '';
+            sendBtn.disabled = true;
+            try {
+                const res = await fetch('/command', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ command: cmd })
+                });
+                const data = await res.json();
+                addMessage(data.response, false);
+            } catch (e) {
+                addMessage('Connection error', false);
+            }
+            sendBtn.disabled = false;
+        }
+
+        sendBtn.addEventListener('click', sendCommand);
+        cmdInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendCommand();
+        });
+
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const ws = new WebSocket(`${wsProtocol}//${window.location.host}/ws`);
+        
+        ws.onopen = () => { status.textContent = 'System Online • WebSocket: Connected'; };
+        ws.onmessage = (event) => { addMessage('HUD: ' + event.data, false); };
+        ws.onclose = () => { 
+            status.textContent = 'System Online • WebSocket: Reconnecting...';
+            setTimeout(() => {
+                const ws2 = new WebSocket(`${wsProtocol}//${window.location.host}/ws`);
+                ws2.onopen = () => { status.textContent = 'System Online • WebSocket: Connected'; };
+                ws2.onmessage = (event) => { addMessage('HUD: ' + event.data, false); };
+            }, 2000);
+        };
+
         setInterval(() => {
-            const cpu = (Math.random() * 100).toFixed(0);
-            document.getElementById('diagnostics').innerHTML = `CPU: ${cpu}% | RAM: ${(Math.random()*100).toFixed(0)}%`;
+            document.getElementById('diagnostics').innerHTML = `CPU: ${(Math.random()*100).toFixed(0)}% | RAM: ${(Math.random()*100).toFixed(0)}% | Time: ${new Date().toLocaleTimeString()}`;
         }, 2000);
     </script>
 </body>

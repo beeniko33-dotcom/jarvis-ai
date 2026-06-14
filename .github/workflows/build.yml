@@ -1,0 +1,56 @@
+name: JARVIS AI Multi-Platform Build
+
+on:
+  push:
+    branches: [ main, master ]
+  release:
+    types: [ published ]
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+          channel: 'stable'
+      - working-directory: ./JarvisAppFlutter
+        run: |
+          flutter pub get
+          flutter build apk --release --split-per-abi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: JarvisAppFlutter/build/app/outputs/flutter-apk/*.apk
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses:/actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - run: pip install pyinstaller
+      - run: pyinstaller jarvis.spec
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-exe
+          path: dist/JARVIS_AI.exe
+
+  build-ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+      - working-directory: ./JarvisAppFlutter
+        run: |
+          flutter pub get
+          flutter build ipa --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa
+          path: JarvisAppFlutter/build/ios/ipa/*.ipa

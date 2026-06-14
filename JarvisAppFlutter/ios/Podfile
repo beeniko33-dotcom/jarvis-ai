@@ -1,0 +1,11 @@
+# ios/Podfile
+platform :ios, '12.0'
+
+ENV['CXX_STANDARD'] = 'c++17'
+
+target 'Runner' do
+  use_frameworks!
+  use_modular_headers!
+
+  pod 'Firebase'
+end

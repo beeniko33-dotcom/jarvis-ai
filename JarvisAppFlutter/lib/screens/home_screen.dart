@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_tts/flutter_tts.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 import '../providers/assistant_provider.dart';
 import '../widgets/particle_orb.dart';
 
@@ -12,11 +14,40 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final TextEditingController _commandController = TextEditingController();
+  final FlutterTts _flutterTts = FlutterTts();
+  final SpeechToText _speech = SpeechToText();
+  bool _isListening = false;
+  bool _speechAvailable = false;
 
   @override
-  void dispose() {
-    _commandController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    _initSpeech();
+  }
+
+  Future<void> _initSpeech() async {
+    _speechAvailable = await _speech.initialize();
+    setState(() {});
+  }
+
+  Future<void> _initTts() async {
+    await _flutterTts.setLanguage("en-US");
+    await _flutterTts.setSpeechRate(0.9);
+  }
+
+  Future<void> _startListening() async {
+    if (!_speechAvailable) return;
+    setState(() => _isListening = true);
+    await _speech.listen(onResult: (result) {
+      if (result.recognizedWords.isNotEmpty) {
+        _commandController.text = result.recognizedWords;
+      }
+    });
+  }
+
+  Future<void> _stopListening() async {
+    setState(() => _isListening = false);
+    await _speech.stopListening();
   }
 
   Future<void> _sendCommand() async {
@@ -24,6 +55,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (command.isEmpty) return;
     await ref.read(assistantProvider.notifier).sendCommand(command);
     _commandController.clear();
+    if (state.response.isNotEmpty) {
+      await _flutterTts.speak(state.response);
+    }
+  }
+
+  @override
+  void dispose() {
+    _commandController.dispose();
+    _flutterTts.stop();
+    super.dispose();
   }
 
   @override
@@ -104,6 +145,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   Row(
                     children: [
                       Expanded(
+                        flex: 2,
+                        child: ElevatedButton.icon(
+                          icon: Icon(_isListening ? Icons.mic : Icons.mic_none),
+                          label: Text(_isListening ? 'Listening...' : 'Voice Input'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _isListening ? Colors.red : Colors.cyanAccent,
+                            foregroundColor: Colors.black,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                          onPressed: state.isLoading
+                              ? null
+                              : () {
+                                  if (_isListening) {
+                                    _stopListening();
+                                  } else {
+                                    _startListening();
+                                  }
+                                },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 3,
                         child: ElevatedButton.icon(
                           icon: const Icon(Icons.send),
                           label: const Text('Send Command'),
