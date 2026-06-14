@@ -1,5 +1,11 @@
 # Enhanced JARVIS AI
 
+## Android Compatibility Enhancements
+- Updated Flutter app for full device compatibility (mic, permissions, TTS)
+- Added speech_to_text, permission_handler, flutter_tts
+- Runtime permission requests in main.dart
+- Target modern Android SDKs (build after pub get)
+
 ## New Features
 - Multi-Agent System with CrewAI (Planner, Researcher, Critic)
 - Vector Memory with ChromaDB for long-term self-learning
@@ -8,22 +14,25 @@
 - Improved mic support (Bluetooth/external devices)
 
 ## Setup
-- Install Python 3.10 or newer (Python 3.11 / 3.12 recommended).
-- Use the matching Python interpreter when installing dependencies.
 
-pip install -r requirements.txt
-ollama pull llama3
-python -m api.bridge  # starts FastAPI bridge for Flutter/WebSocket
-python main.py  # runs local voice assistant
+**Backend:**
+- Python 3.11+
+- `pip install -r requirements.txt`
+- `ollama pull llama3`
+- `python -m api.bridge`
+- `python main.py`
 
-Flutter frontend:
+**Flutter Android:**
+```bash
 cd JarvisAppFlutter
 flutter pub get
-flutter run
+flutter build apk --release --split-per-abi
+```
 
-Web HUD:
-cd web && npm start
+Install the APK on your device. Grant microphone permissions.
 
-> Note: `crewai-tools` is optional and may not be available via pip. Install only if needed.
+**For specific device issues:** Share model/Android version for further tweaks.
 
-Push changes to GitHub regularly!
+Web HUD: `cd web && npm start`
+
+> Note: Push changes regularly!
