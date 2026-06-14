@@ -84,9 +84,12 @@ class SelfAwareAgent:
         vector_context = "\n".join(self.vector_memory.query(cmd))
         full_prompt = f"Context:\n{context}\nVector Recall:\n{vector_context}\nUser: {cmd}\nRespond as witty, self-aware JARVIS:"
 
-        # Expanded explicit command handlers for ALL common requests
         cmd_lower = cmd.lower()
-        if "time" in cmd_lower or "clock" in cmd_lower:
+        
+        # Route to AdvancedBrain for forex, device, learn commands
+        if any(kw in cmd_lower for kw in ["forex", "trade", "trading", "eurusd", "gbpusd", "usdjpy", "device", "execute", "learn ", "control "]):
+            response = self.brain.process_command(cmd)
+        elif "time" in cmd_lower or "clock" in cmd_lower:
             response = f"The current time is {datetime.now().strftime('%I:%M %p')}."
         elif "date" in cmd_lower:
             response = f"Today is {datetime.now().strftime('%A, %B %d, %Y')}."
