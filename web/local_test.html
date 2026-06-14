@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>JARVIS Bridge Test</title>
+</head>
+<body>
+  <h3>JARVIS Bridge Local Test</h3>
+  <input id="cmd" placeholder="Type a command" style="width:300px"/>
+  <button id="send">Send</button>
+  <pre id="out"></pre>
+
+  <script>
+    document.getElementById('send').addEventListener('click', async () => {
+      const cmd = document.getElementById('cmd').value || 'hello';
+      const res = await fetch('/command', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command: cmd })
+      });
+      const j = await res.json();
+      document.getElementById('out').textContent = JSON.stringify(j, null, 2);
+    });
+  </script>
+</body>
+</html>

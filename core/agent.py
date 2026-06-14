@@ -1,4 +1,10 @@
-from crewai import Agent, Task, Crew, Process
+try:
+    from crewai import Agent, Task, Crew, Process
+    CREWAI_AVAILABLE = True
+except ImportError:
+    Agent = Task = Crew = Process = None
+    CREWAI_AVAILABLE = False
+
 import ollama
 from typing import List
 
@@ -7,6 +13,8 @@ class JarvisAgents:
         self.llm = "ollama/llama3"  # or groq etc.
 
     def researcher(self):
+        if not CREWAI_AVAILABLE:
+            return None
         return Agent(
             role='Researcher',
             goal='Gather accurate information and tools for tasks',
@@ -17,6 +25,8 @@ class JarvisAgents:
         )
 
     def critic(self):
+        if not CREWAI_AVAILABLE:
+            return None
         return Agent(
             role='Critic',
             goal='Evaluate and optimize responses for self-improvement',
@@ -26,6 +36,8 @@ class JarvisAgents:
         )
 
     def planner(self):
+        if not CREWAI_AVAILABLE:
+            return None
         return Agent(
             role='Planner',
             goal='Break down complex commands into steps',
@@ -35,6 +47,16 @@ class JarvisAgents:
         )
 
     def create_crew(self, task_description):
+        if not CREWAI_AVAILABLE:
+            class SimpleCrew:
+                def __init__(self, description):
+                    self.description = description
+
+                def kickoff(self):
+                    return f"Fallback agent result for: {self.description}"
+
+            return SimpleCrew(task_description)
+
         researcher = self.researcher()
         critic = self.critic()
         planner = self.planner()

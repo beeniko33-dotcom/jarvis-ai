@@ -3,9 +3,11 @@ speechrecognition
 pyttsx3
 psutil
 ollama
-crewai
+# crewai
 chromadb
 fastapi
 uvicorn
 websockets
-crewai-tools  # if using
+python-dotenv
+pydantic
+# crewai-tools is optional and may not be available via pip; install only if needed.

@@ -1,0 +1,14 @@
+{
+  "root": {
+    "status_code": 200,
+    "json": {
+      "status": "JARVIS backend bridge active"
+    }
+  },
+  "command": {
+    "status_code": 200,
+    "json": {
+      "response": "Fallback agent result for: hello world"
+    }
+  }
+}
