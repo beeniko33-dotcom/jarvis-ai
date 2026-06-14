@@ -1,0 +1,5 @@
+executable=C:\Users\rmden\AppData\Local\Programs\Python\Python39\python.exe
+version=3.9.0 (tags/v3.9.0:9cf6752, Oct  5 2020, 15:34:40) [MSC v.1927 64 bit (AMD64)]
+fastapi=False
+uvicorn=False
+packages=main,optimizer,temp_pycheck,updated_main,_asyncio,_bz2,_ctypes,_ctypes_test,_decimal,_elementtree,_hashlib,_lzma,_msi,_multiprocessing,_overlapped,_queue,_socket,_sqlite3,_ssl,_testbuffer,_testcapi,_testconsole,_testimportmultiple,_testmultiphase,_tkinter,_uuid,_zoneinfo,pyexpat,select,unicodedata,winsound,__future__,_aix_support,_bootlocale,_bootsubprocess,_collections_abc,_compat_pickle,_compression,_markupbase,_osx_support,_py_abc,_pydecimal,_pyio,_sitebuiltins,_strptime,_threading_local,_weakrefset,abc,aifc,antigravity

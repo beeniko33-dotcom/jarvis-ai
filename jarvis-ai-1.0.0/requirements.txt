@@ -1,0 +1,6 @@
+speechrecognition
+pyttsx3
+psutil
+pygame
+requests
+ollama

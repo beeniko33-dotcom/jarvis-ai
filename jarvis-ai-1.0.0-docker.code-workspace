@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "../jarvis-ai-1.0.0-docker"
+		},
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"powershell.cwd": "jarvis-ai-1.0.0-docker"
+	}
+}

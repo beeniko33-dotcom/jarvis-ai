@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JARVIS HUD - Particle Orb</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Arial', sans-serif; }
+        canvas { display: block; }
+        #hud { position: absolute; top: 20px; left: 20px; color: #00ffcc; text-shadow: 0 0 10px #00ffcc; }
+        #status { position: absolute; bottom: 20px; left: 20px; color: #00ffcc; }
+    </style>
+</head>
+<body>
+    <div id="hud">
+        <h1>JARVIS</h1>
+        <div id="diagnostics"></div>
+    </div>
+    <div id="status">System Online</div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script>
+        // Three.js Particle HUD
+        let scene, camera, renderer;
+        let particles;
+        const particleCount = 2000;
+
+        function init() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            // Particle system
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+            const colors = new Float32Array(particleCount * 3);
+            const sizes = new Float32Array(particleCount);
+
+            for (let i = 0; i < particleCount * 3; i += 3) {
+                positions[i] = (Math.random() - 0.5) * 10;
+                positions[i + 1] = (Math.random() - 0.5) * 10;
+                positions[i + 2] = (Math.random() - 0.5) * 10;
+                
+                colors[i] = 0; colors[i+1] = 1; colors[i+2] = Math.random();
+                sizes[i/3] = Math.random() * 0.1 + 0.05;
+            }
+
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+            const material = new THREE.PointsMaterial({
+                size: 0.05,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.8,
+                blending: THREE.AdditiveBlending
+            });
+
+            particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+
+            camera.position.z = 5;
+
+            // Animation
+            function animate() {
+                requestAnimationFrame(animate);
+                particles.rotation.y += 0.001;
+                // Pulse effect
+                particles.scale.setScalar(1 + Math.sin(Date.now() * 0.001) * 0.05);
+                renderer.render(scene, camera);
+            }
+            animate();
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        init();
+
+        // Simulate diagnostics update + WebSocket for real-time Python sync
+        let ws;
+        function connectWS() {
+            ws = new WebSocket('ws://localhost:8000/ws');
+            ws.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                if (data.type === 'response') {
+                    document.getElementById('status').innerHTML = data.text;
+                    // Pulse effect on response
+                    particles.scale.setScalar(1.5);
+                    setTimeout(() => particles.scale.setScalar(1), 500);
+                }
+            };
+        }
+        connectWS();
+
+        setInterval(() => {
+            const cpu = (Math.random() * 100).toFixed(0);
+            document.getElementById('diagnostics').innerHTML = `CPU: ${cpu}% | RAM: ${(Math.random()*100).toFixed(0)}% | Status: Online`;
+        }, 2000);
+    </script>
+</body>
+</html>

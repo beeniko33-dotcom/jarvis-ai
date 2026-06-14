@@ -1,0 +1,39 @@
+2026-06-13 14:05:20,274 INFO Starting bridge using C:\Users\rmden\AppData\Local\Programs\Python\Python39\python.exe
+2026-06-13 14:05:35,006 ERROR Failed to start bridge: No module named 'crewai'
+Traceback (most recent call last):
+  File "C:\Users\rmden\Downloads\jarvis-ai-1.0.0\start_bridge.py", line 12, in main
+    from api.bridge import app
+  File "C:\Users\rmden\Downloads\jarvis-ai-1.0.0\api\bridge.py", line 3, in <module>
+    from core.service import SelfAwareAgent
+  File "C:\Users\rmden\Downloads\jarvis-ai-1.0.0\core\service.py", line 13, in <module>
+    from core.agent import JarvisAgents
+  File "C:\Users\rmden\Downloads\jarvis-ai-1.0.0\core\agent.py", line 1, in <module>
+    from crewai import Agent, Task, Crew, Process
+ModuleNotFoundError: No module named 'crewai'
+2026-06-13 14:06:23,924 INFO Starting bridge using C:\Users\rmden\AppData\Local\Programs\Python\Python39\python.exe
+2026-06-13 14:06:31,017 ERROR Failed to start bridge: No module named 'crewai'
+Traceback (most recent call last):
+  File "C:\Users\rmden\Downloads\jarvis-ai-1.0.0\start_bridge.py", line 12, in main
+    from api.bridge import app
+  File "C:\Users\rmden\Downloads\jarvis-ai-1.0.0\api\bridge.py", line 3, in <module>
+    from core.service import SelfAwareAgent
+  File "C:\Users\rmden\Downloads\jarvis-ai-1.0.0\core\service.py", line 13, in <module>
+    from core.agent import JarvisAgents
+  File "C:\Users\rmden\Downloads\jarvis-ai-1.0.0\core\agent.py", line 1, in <module>
+    from crewai import Agent, Task, Crew, Process
+ModuleNotFoundError: No module named 'crewai'
+2026-06-13 14:07:04,014 INFO Starting bridge using C:\Users\rmden\AppData\Local\Programs\Python\Python39\python.exe
+2026-06-13 14:07:08,943 INFO uvicorn imported, starting server
+2026-06-13 14:07:35,889 WARNING SelfAwareAgent unavailable: No module named 'crewai'
+2026-06-13 15:28:53,480 INFO Starting bridge using C:\Users\rmden\AppData\Local\Programs\Python\Python39\python.exe
+2026-06-13 15:29:07,260 INFO uvicorn imported, starting server
+2026-06-13 15:31:49,823 INFO Starting bridge using C:\Users\rmden\AppData\Local\Programs\Python\Python39\python.exe
+2026-06-13 15:31:56,584 INFO uvicorn imported, starting server
+2026-06-13 15:50:29,193 INFO Starting bridge using C:\Users\rmden\AppData\Local\Programs\Python\Python39\python.exe
+2026-06-13 15:50:47,269 INFO uvicorn imported, starting server
+2026-06-13 15:51:40,406 INFO Starting bridge using C:\Users\rmden\AppData\Local\Programs\Python\Python39\python.exe
+2026-06-13 15:52:04,996 INFO uvicorn imported, starting server
+2026-06-13 16:04:32,837 INFO Starting bridge using C:\Users\rmden\AppData\Local\Programs\Python\Python39\python.exe
+2026-06-13 16:04:39,636 INFO uvicorn imported, starting server
+2026-06-13 16:13:48,104 WARNING SelfAwareAgent unavailable: [91mYour system has an unsupported version of sqlite3. Chroma                     requires sqlite3 >= 3.35.0.[0m
+[94mPlease visit                     https://docs.trychroma.com/troubleshooting#sqlite to learn how                     to upgrade.[0m
