@@ -1,20 +1,31 @@
 name: jarvis_app_flutter
-description: JARVIS Ultimate 2026 mobile frontend for the Python backend.
+description: JARVIS Ultimate 2026 mobile frontend for the Python backend. Enhanced for full Android compatibility with voice, permissions, and connectivity.
 publish_to: "none"
-version: 0.1.0+1
+version: 0.1.1+2
+
 environment:
-  sdk: ">=3.3.0 <4.0.0"
-  flutter: ">=3.10.0"
+  sdk: '>=3.3.0 <4.0.0'
+  flutter: '>=3.19.0'
+
 dependencies:
   flutter:
     sdk: flutter
-  flutter_riverpod: ^2.4.0
-  http: ^1.1.0
+  flutter_riverpod: ^2.5.1
+  http: ^1.2.2
   animated_text_kit: ^4.2.2
-  cupertino_icons: ^1.0.5
+  cupertino_icons: ^1.0.8
+  # Voice & Android features
+  speech_to_text: ^6.6.0
+  flutter_tts: ^4.0.2
+  permission_handler: ^11.3.1
+  connectivity_plus: ^6.0.3
+  wakelock_plus: ^1.2.2
+  provider: ^6.1.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^2.0.0
+  flutter_lints: ^4.0.0
+
 flutter:
   uses-material-design: true
