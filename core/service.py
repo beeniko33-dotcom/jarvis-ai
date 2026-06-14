@@ -57,7 +57,19 @@ class SelfAwareAgent:
         cmd_lower = cmd.lower()
         
         # Route to HackingBrain for pentesting commands
-        if "nmap" in cmd_lower or "exploit" in cmd_lower or "recon" in cmd_lower or cmd_lower.startswith("hacking"):
+        if "nmap" in cmd_lower or "whois" in cmd_lower or "nikto" in cmd_lower or "msfconsole" in cmd_lower:
+            if self.hacking:
+                # Auto-switch module based on tool
+                if "nmap" in cmd_lower or "nikto" in cmd_lower:
+                    self.hacking.current_module = "scan"
+                elif "whois" in cmd_lower or "theharvester" in cmd_lower:
+                    self.hacking.current_module = "recon"
+                elif "msfconsole" in cmd_lower or "exploit" in cmd_lower:
+                    self.hacking.current_module = "exploit"
+                response = self.hacking.execute(cmd.replace("hacking", "").strip() or "help")
+                return response if response else "Hacking module ready."
+        # General hacking commands
+        if "exploit" in cmd_lower or cmd_lower.startswith("hacking"):
             if self.hacking:
                 response = self.hacking.execute(cmd.replace("hacking", "").strip() or "help")
                 return response if response else "Hacking module ready."

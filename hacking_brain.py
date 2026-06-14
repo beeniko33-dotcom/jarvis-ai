@@ -172,7 +172,10 @@ class HackingBrain:
         mod = self.modules.get(self.current_module)
         if mod:
             for cmd_pattern, cmd_data in mod.commands.items():
-                if command.startswith(cmd_pattern.split()[0]):
+                # Match if command starts with the pattern's first word
+                pattern_words = cmd_pattern.split()
+                cmd_words = command.split()
+                if pattern_words and cmd_words and cmd_words[0] == pattern_words[0]:
                     return f"[{mod.name.upper()}] {command}\nSimulated execution completed."
         
         return "[ERROR] Unknown command. Type 'help' for available commands."
