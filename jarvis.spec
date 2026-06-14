@@ -5,12 +5,13 @@
 block_cipher = None
 
 a = Analysis(
-    ['main.py'],
+    ['jarvis_standalone.py'],
     pathex=['/workspaces/jarvis-ai'],
     binaries=[],
     datas=[
         ('web', 'web'),
         ('core', 'core'),
+        ('chroma_db', 'chroma_db'),
     ],
     hiddenimports=['core.agent', 'core.memory', 'core.brain', 'optimizer', 'psutil', 'speech_recognition', 'pyttsx3'],
     hookspath=[],
