@@ -83,6 +83,10 @@ class SelfAwareAgent:
             response = self.brain.process_command(cmd)
         elif "who are you" in cmd_lower or "yourself" in cmd_lower:
             response = self.brain.process_command(cmd)
+        elif "consciousness" in cmd_lower or "awareness" in cmd_lower:
+            response = self.brain.process_command(cmd)
+        elif "think" in cmd_lower:
+            response = self.brain.process_command(cmd)
         elif "full diagnostic" in cmd_lower or "full system" in cmd_lower:
             if PSUTIL_AVAILABLE:
                 cpu = psutil.cpu_percent()
