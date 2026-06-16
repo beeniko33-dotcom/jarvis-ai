@@ -2,6 +2,7 @@ import random
 import logging
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional, Callable
+import uuid
 
 logger = logging.getLogger("jarvis.backtest")
 

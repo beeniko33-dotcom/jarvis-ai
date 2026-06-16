@@ -5,7 +5,7 @@ import type { BacktestResult } from '../types/backtest';
 
 export default function BacktesterPage() {
   const form = useBacktestForm('BTC/USDT', '1m');
-  const { runBacktest, getResults, loading, error } = useBacktest();
+  const { runBacktest, loading, error } = useBacktest();
   const [result, setResult] = useState<BacktestResult | null>(null);
 
   const handleRun = async () => {

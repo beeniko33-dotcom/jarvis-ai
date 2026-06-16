@@ -4,8 +4,7 @@ import type {
   LoginRequest, 
   RegisterRequest, 
   TokenResponse, 
-  TwoFAEnableResponse, 
-  TwoFAVerifyRequest,
+  TwoFAEnableResponse,
   AuthContextType 
 } from '../types/auth';
 

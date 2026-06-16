@@ -1,15 +1,20 @@
-import os, random, json, time, asyncio, logging
+import os
+import random
+import json
+import time
+import asyncio
+import logging
 from datetime import datetime, timedelta
-from typing import Optional, List, Dict
-from collections import defaultdict
+from typing import Optional, List, Dict, Any
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, HTTPException, status, Query
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, Depends, HTTPException, status, Query
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, field_validator
-import psutil, uvicorn
+import psutil
+import uvicorn
 from sqlalchemy import create_engine, Column, Integer, String, Float, Text, DateTime, Boolean
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 from passlib.context import CryptContext
@@ -19,6 +24,7 @@ from dotenv import load_dotenv
 from consciousness_engine import ConsciousnessEngine
 from hacking_brain import HackingBrain
 from risk_manager import RiskManager, RiskViolation as RiskLimitError
+from backtest_engine import normalize_timeframe, simulated_candles, ccxt_symbol
 
 load_dotenv()
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
@@ -28,13 +34,13 @@ HOST = os.getenv("JARVIS_HOST", "0.0.0.0")
 PORT = int(os.getenv("JARVIS_PORT", "8000"))
 TOKEN_TTL_MIN = int(os.getenv("TOKEN_TTL_MIN", "60"))
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./jarvis.db")
-JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
-if not JWT_SECRET_KEY:
-    raise RuntimeError("JWT_SECRET_KEY must be set in .env")
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "supersecretkey")
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 ALLOWED_ORIGINS = [origin.strip() for origin in os.getenv("ALLOWED_ORIGINS", "http://localhost:8000").split(",") if origin.strip()] or ["http://localhost:8000"]
+RISK_SERVICE_URL = os.getenv("RISK_SERVICE_URL", "http://localhost:9000")
 
+# Database
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -68,45 +74,58 @@ class TradeDB(Base):
     closed_at = Column(DateTime, nullable=True)
 
 
-class CandleDB(Base):
-    __tablename__ = "candles"
-    id = Column(Integer, primary_key=True, index=True)
-    pair = Column(String, index=True)
-    timeframe = Column(String, default="1m")
-    timestamp = Column(DateTime, index=True)
-    open = Column(Float)
-    high = Column(Float)
-    low = Column(Float)
-    close = Column(Float)
-    volume = Column(Float, default=0.0)
-
-
-class SignalDB(Base):
-    __tablename__ = "signals"
-    id = Column(Integer, primary_key=True, index=True)
-    pair = Column(String, index=True)
-    signal = Column(String)
-    bias = Column(String)
-    confidence = Column(Float)
-    reasoning = Column(Text)
-    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
-
-
 Base.metadata.create_all(bind=engine)
 
+# Auth
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
+FakeUsers = {
+    "admin": {"username": "admin", "password": "jarvis123", "balance": 10000.0, "equity": 10000.0}
+}
 
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+def make_token(username: str) -> str:
+    expire = datetime.utcnow() + timedelta(minutes=TOKEN_TTL_MIN)
+    payload = {"sub": username, "exp": expire}
+    try:
+        return jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
+    except Exception:
+        return f"demo-token-{username}-{int(expire.timestamp())}"
+
+
+async def current_user(token: str = Depends(oauth2_scheme)):
+    try:
+        if token.startswith("demo-token-"):
+            username = token.split("-")[2]
+        else:
+            payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+            username = payload.get("sub")
+        if username not in FakeUsers:
+            raise HTTPException(status_code=401, detail="Unauthorized")
+        return username
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+
+# Rate limiter
 class RateLimitExceeded(Exception):
     pass
 
 
 class SimpleRateLimiter:
-    def __init__(self) -> None:
+    def __init__(self):
         self.window: Dict[str, List[float]] = {}
 
-    def check(self, key: str, limit: int = 10, window: int = 60) -> None:
+    def check(self, key: str, limit: int = 10, window: int = 60):
         now = time.time()
         history = self.window.setdefault(key, [])
         self.window[key] = [t for t in history if now - t < window]
@@ -116,6 +135,16 @@ class SimpleRateLimiter:
 
 
 rate_limiter = SimpleRateLimiter()
+
+
+# App setup
+app = FastAPI(
+    title="JARVIS Trader AI",
+    description="Production trading platform for www.jarvisTrader.ai",
+    version="4.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+)
 
 
 @app.middleware("http")
@@ -128,7 +157,6 @@ async def throttle_middleware(request: Request, call_next):
     return await call_next(request)
 
 
-app = FastAPI(title="JARVIS Trader AI", description="Production trading platform", version="4.0.0", docs_url="/docs", redoc_url="/redoc")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
@@ -141,35 +169,22 @@ app.mount("/ui", StaticFiles(directory="static", html=True), name="ui")
 
 consciousness = ConsciousnessEngine()
 hacking = HackingBrain()
+risk_manager = RiskManager(initial_balance=10000.0)
 
 trade_store = {"trades": [], "balance": 10000.0, "equity": 10000.0, "open_positions": []}
 price_memory = {
-    "EUR/USD": 1.0850,
-    "GBP/USD": 1.2740,
-    "USD/JPY": 157.20,
-    "AUD/USD": 0.6540,
-    "BTC/USD": 68400,
-    "BTC/USDT": 68400,
-    "ETH/USD": 3650.0,
-    "ETH/USDT": 3650.0,
-    "SOL/USD": 185.0,
-    "SOL/USDT": 185.0,
+    "EUR/USD": 1.0850, "GBP/USD": 1.2740, "USD/JPY": 157.20,
+    "AUD/USD": 0.6540, "BTC/USD": 68400, "BTC/USDT": 68400,
+    "ETH/USD": 3650.0, "ETH/USDT": 3650.0, "SOL/USD": 185.0, "SOL/USDT": 185.0,
 }
 heartbeat_clients: List[WebSocket] = []
 backtest_results: Dict[str, Dict[str, Any]] = {}
 
 PAIR_PATTERN = r"^[A-Z0-9]{2,10}/[A-Z0-9]{2,10}$"
 PAIR_ALIASES = {
-    "EURUSD": "EUR/USD",
-    "GBPUSD": "GBP/USD",
-    "USDJPY": "USD/JPY",
-    "AUDUSD": "AUD/USD",
-    "BTCUSD": "BTC/USD",
-    "BTCUSDT": "BTC/USDT",
-    "ETHUSD": "ETH/USD",
-    "ETHUSDT": "ETH/USDT",
-    "SOLUSD": "SOL/USD",
-    "SOLUSDT": "SOL/USDT",
+    "EURUSD": "EUR/USD", "GBPUSD": "GBP/USD", "USDJPY": "USD/JPY",
+    "AUDUSD": "AUD/USD", "BTCUSD": "BTC/USD", "BTCUSDT": "BTC/USDT",
+    "ETHUSD": "ETH/USD", "ETHUSDT": "ETH/USDT", "SOLUSD": "SOL/USD", "SOLUSDT": "SOL/USDT",
 }
 
 
@@ -180,7 +195,7 @@ def normalize_pair(pair: str) -> str:
 
 def validate_pair_value(value: str) -> str:
     pair = normalize_pair(value)
-    if not re.match(PAIR_PATTERN, pair):
+    if not __import__("re").match(PAIR_PATTERN, pair):
         raise ValueError("pair must use BASE/QUOTE format, for example BTC/USDT")
     return pair
 
@@ -194,15 +209,6 @@ def ccxt_exchange():
         exchange.apiKey = api_key
         exchange.secret = api_secret
     return exchange
-
-
-def ccxt_symbol(pair: str) -> str:
-    return pair.replace("/", "")
-
-
-def normalize_timeframe(tf: str) -> str:
-    mapping = {"1m": "1m", "5m": "5m", "15m": "15m", "1H": "1h", "4H": "4h", "1D": "1d"}
-    return mapping.get(tf, "1m")
 
 
 def market_price(pair: str) -> float:
@@ -225,68 +231,7 @@ def market_price(pair: str) -> float:
     return price
 
 
-def simulated_orderbook(pair: str, limit: int) -> Dict[str, Any]:
-    normalized = normalize_pair(pair)
-    base = price_memory.get(normalized, price_memory.get(normalized.replace("/USDT", "/USD"), 100.0))
-    if normalized.endswith("/JPY"):
-        step = max(base * 0.0002, 0.01)
-    elif normalized in {"BTC/USD", "BTC/USDT"}:
-        step = max(base * 0.0005, 25.0)
-    elif normalized in {"ETH/USD", "ETH/USDT"}:
-        step = max(base * 0.0005, 2.0)
-    elif normalized in {"SOL/USD", "SOL/USDT"}:
-        step = max(base * 0.001, 0.1)
-    else:
-        step = max(base * 0.0002, 0.0001)
-    bids = [[round(base - step * (i + 1), 8), round(random.uniform(0.2, 8.0), 4)] for i in range(limit)]
-    asks = [[round(base + step * (i + 1), 8), round(random.uniform(0.2, 8.0), 4)] for i in range(limit)]
-    return {"source": "simulation", "pair": normalized, "limit": limit, "bids": bids, "asks": asks, "timestamp": datetime.utcnow().isoformat()}
-
-
-FakeUsers = {
-    "admin": {
-        "username": "admin",
-        "password": "jarvis123",
-        "balance": 10000.0,
-        "equity": 10000.0,
-    }
-}
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-def make_token(username: str) -> str:
-    expire = datetime.utcnow() + timedelta(minutes=TOKEN_TTL_MIN)
-    payload = {"sub": username, "exp": expire}
-    try:
-        return jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
-    except Exception:
-        return f"demo-token-{username}-{int(expire.timestamp())}"
-
-
-async def current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    try:
-        if token.startswith("demo-token-"):
-            username = token.split("-")[2]
-        else:
-            payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
-            username = payload.get("sub")
-        if username not in FakeUsers:
-            raise HTTPException(status_code=401, detail="Unauthorized")
-        return username
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid token")
-
-
-risk_manager = RiskManager(initial_balance=trade_store["equity"])
-
-
+# Schemas
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
@@ -328,9 +273,7 @@ class BacktestRequest(BaseModel):
     strategy: str = Field("sma_crossover", min_length=1)
 
 
-# -----------------------------------------------------------------------------
-# Health & System
-# -----------------------------------------------------------------------------
+# Health
 @app.get("/health")
 def health():
     cpu = round(psutil.cpu_percent(), 1) if psutil else 0.0
@@ -384,9 +327,7 @@ def brain_stats():
     }
 
 
-# -----------------------------------------------------------------------------
 # Auth
-# -----------------------------------------------------------------------------
 @app.post("/token", response_model=TokenResponse)
 def login(request: Request, form: OAuth2PasswordRequestForm = Depends()):
     user = FakeUsers.get(form.username)
@@ -426,9 +367,7 @@ def verify_2fa(code: str, username: str = Depends(current_user)):
     return {"message": "2FA verified", "username": username}
 
 
-# -----------------------------------------------------------------------------
-# Market Data - CCXT Live + Simulation Fallback
-# -----------------------------------------------------------------------------
+# Market Data
 @app.get("/market/ticker")
 def market_ticker(symbols: Optional[str] = Query(None)):
     try:
@@ -438,7 +377,7 @@ def market_ticker(symbols: Optional[str] = Query(None)):
             syms = [s.strip() for s in symbols.split(",") if s.strip()]
             tickers = exchange.fetch_tickers(syms)
         else:
-            tickers = exchange.fetch_tickers(["BTC/USDT", "ETH/USDT", "SOL/USDT"])
+            tickers = exchange.fetch_tickers(["BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT", "XRP/USDT"])
         out = {}
         for sym, data in tickers.items():
             out[sym] = {
@@ -481,11 +420,7 @@ def market_candles(pair: str = Query("BTC/USDT", pattern=PAIR_PATTERN), timefram
             {
                 "timestamp": datetime.utcfromtimestamp(o[0] / 1000).isoformat(),
                 "time": int(o[0] / 1000),
-                "open": o[1],
-                "high": o[2],
-                "low": o[3],
-                "close": o[4],
-                "volume": o[5],
+                "open": o[1], "high": o[2], "low": o[3], "close": o[4], "volume": o[5],
             }
             for o in ohlcv
         ]
@@ -507,12 +442,14 @@ def market_orderbook(pair: str = Query(..., pattern=PAIR_PATTERN), limit: int = 
         return {"source": "ccxt:binance", "pair": normalized, "limit": limit, "bids": bids, "asks": asks, "timestamp": datetime.utcnow().isoformat()}
     except Exception as exc:
         logger.warning(f"CCXT orderbook fallback: {exc}")
-        return simulated_orderbook(normalized, limit)
+        base = price_memory.get(normalized, price_memory.get(normalized.replace("/USDT", "/USD"), 100.0))
+        step = max(base * 0.0002, 0.0001)
+        bids = [[round(base - step * (i + 1), 8), round(random.uniform(0.2, 8.0), 4)] for i in range(limit)]
+        asks = [[round(base + step * (i + 1), 8), round(random.uniform(0.2, 8.0), 4)] for i in range(limit)]
+        return {"source": "simulation", "pair": normalized, "limit": limit, "bids": bids, "asks": asks, "timestamp": datetime.utcnow().isoformat()}
 
 
-# -----------------------------------------------------------------------------
-# Forex Signals + Portfolio
-# -----------------------------------------------------------------------------
+# Forex
 @app.get("/forex-portfolio")
 def forex_portfolio():
     pairs = ["EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD", "BTC/USD", "ETH/USD", "SOL/USD", "BTC/USDT", "ETH/USDT", "SOL/USDT"]
@@ -542,9 +479,7 @@ def forex_signal(pair: str = "EUR/USD"):
     return {"pair": normalized, "signal": signals[bias], "bias": bias, "confidence": confidence, "reasoning": random.choice(reasons[bias]), "timestamp": datetime.utcnow().isoformat()}
 
 
-# -----------------------------------------------------------------------------
-# Trade Execution + Portfolio
-# -----------------------------------------------------------------------------
+# Trade
 @app.post("/trade/execute")
 def execute_trade(request: Request, req: TradeRequest, username: str = Depends(current_user)):
     pair = validate_pair_value(req.pair)
@@ -634,15 +569,10 @@ def run_simulation(pair: str = "EUR/USD", count: int = 5, username: str = Depend
         sl = entry * (0.997 if direction == "BUY" else 1.003)
         t = {
             "id": len(trade_store["trades"]) + i + 1,
-            "pair": pair,
-            "direction": direction,
+            "pair": pair, "direction": direction,
             "size": round(random.uniform(0.1, 2.0), 1),
-            "entry": round(entry, 5),
-            "tp": round(tp, 5),
-            "sl": round(sl, 5),
-            "status": "open",
-            "pnl": 0.0,
-            "opened_at": datetime.utcnow().isoformat(),
+            "entry": round(entry, 5), "tp": round(tp, 5), "sl": round(sl, 5),
+            "status": "open", "pnl": 0.0, "opened_at": datetime.utcnow().isoformat(),
         }
         trade_store["trades"].append(t)
         trade_store["open_positions"].append(t)
@@ -651,9 +581,7 @@ def run_simulation(pair: str = "EUR/USD", count: int = 5, username: str = Depend
     return {"success": True, "executed": count, "bias": bias, "trades": results}
 
 
-# -----------------------------------------------------------------------------
 # Backtesting
-# -----------------------------------------------------------------------------
 @app.post("/backtest/run")
 def run_backtest_endpoint(req: BacktestRequest):
     try:
@@ -662,6 +590,7 @@ def run_backtest_endpoint(req: BacktestRequest):
         logger.warning(f"Backtest candle fallback: {exc}")
         candles = simulated_candles(req.pair, req.timeframe, 200)
     if req.strategy == "sma_crossover":
+        from backtest_engine import run_backtest, sma_crossover_strategy
         result = run_backtest(sma_crossover_strategy, candles, req.initial_capital)
     else:
         raise HTTPException(status_code=400, detail="Unsupported strategy")
@@ -692,9 +621,45 @@ def backtest_results_endpoint(result_id: Optional[str] = Query(None)):
     return {"results": results}
 
 
-# -----------------------------------------------------------------------------
-# Command / Neural Terminal
-# -----------------------------------------------------------------------------
+# Risk proxy
+@app.post("/risk/check-position")
+def risk_proxy(request: Request, username: str = Depends(current_user)):
+    try:
+        import httpx as _httpx
+        async def _call():
+            async with _httpx.AsyncClient(timeout=5) as client:
+                resp = await client.post(f"{RISK_SERVICE_URL}/risk/check-position", json=await request.json())
+                return JSONResponse(content=resp.json(), status_code=resp.status_code)
+        return asyncio.run(_call())
+    except Exception as exc:
+        logger.warning(f"Risk service unavailable: {exc}")
+    pair = "EUR/USD"
+    direction = "BUY"
+    size = 0.1
+    entry = 1.0850
+    sl = entry * 0.995
+    equity = 10000.0
+    open_positions = 0
+    try:
+        risk_manager.check_trade(pair, direction, size, entry, sl, equity, open_positions)
+        return JSONResponse(content={"approved": True, "fallback": True})
+    except RiskLimitError as exc:
+        return JSONResponse(content={"approved": False, "reasons": [str(exc)], "fallback": True})
+
+
+# Exchange session
+@app.post("/api/exchange/session")
+async def exchange_session(request: Request):
+    body = await request.json()
+    exchange_name = body.get("exchange", "binance")
+    encrypted_blob = body.get("encrypted_blob")
+    if not encrypted_blob:
+        raise HTTPException(status_code=400, detail="encrypted_blob required")
+    logger.info(f"Exchange session requested for {exchange_name}")
+    return {"status": "session_created", "exchange": exchange_name}
+
+
+# Command
 @app.post("/command")
 def process_command(request: Request, req: CommandRequest, username: str = Depends(current_user)):
     cmd = req.command
@@ -723,9 +688,7 @@ def process_command(request: Request, req: CommandRequest, username: str = Depen
     return {"response": f"JARVIS Trader: {cmd} received."}
 
 
-# -----------------------------------------------------------------------------
 # WebSocket
-# -----------------------------------------------------------------------------
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()

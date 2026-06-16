@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import type { PositionRiskRequest, RiskCheckResponse, UserRiskState, CircuitBreakerState } from '../types/risk';
+import type { PositionRiskRequest, RiskCheckResponse, UserRiskState } from '../types/risk';
 import { useAuth } from '../contexts/AuthContext';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';

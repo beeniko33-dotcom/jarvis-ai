@@ -12,9 +12,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 
 import redis
-import requests
 from fastapi import FastAPI, HTTPException, Depends, Header
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field
 from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Boolean, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session

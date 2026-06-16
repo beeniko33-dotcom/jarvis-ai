@@ -33,7 +33,7 @@ export default function BacktestResults({ result, loading }: BacktestResultsProp
         <Metric label="Win Rate" value={`${metrics.winRate}%`} />
         <Metric label="Profit Factor" value={metrics.profitFactor} />
         <Metric label="Max Drawdown" value={`${metrics.maxDrawdown}%`} warn />
-        <Metric label="Total Trades" value={metrics.totalTrades} />
+        <Metric label="Total Trades" value={metrics.totalTrades.toString()} />
         <Metric label="Wins / Losses" value={`${metrics.wins} / ${metrics.losses}`} />
       </div>
       <EquityChart curve={result.equityCurve} />

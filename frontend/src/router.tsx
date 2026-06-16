@@ -5,14 +5,9 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import BacktesterPage from './pages/BacktesterPage';
 
-const router = createBrowserRouter([
+export const router = createBrowserRouter([
   {
-    path: '/',
-    element: (
-      <AuthProvider>
-        <AppLayout />
-      </AuthProvider>
-    ),
+    element: <AuthProvider><AppLayout /></AuthProvider>,
     children: [
       { index: true, element: <LoginPage /> },
       { path: 'dashboard', element: <DashboardPage /> },
@@ -21,5 +16,3 @@ const router = createBrowserRouter([
     ],
   },
 ]);
-
-export default router;

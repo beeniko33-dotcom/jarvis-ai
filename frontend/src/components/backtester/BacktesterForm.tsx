@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import type { StrategyConfig } from '../types/backtest';
-import { DEFAULT_STRATEGIES } from '../lib/useBacktest';
+import type { StrategyConfig } from '../../types/backtest';
+import { DEFAULT_STRATEGIES } from '../../lib/useBacktest';
 
 interface BacktesterFormProps {
   onRun: (config: {
