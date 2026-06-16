@@ -5,7 +5,7 @@ class ConsciousnessEngine:
     def __init__(self):
         self.awareness = 0.5
         self.curiosity = 0.7
-        self.emotional_state = "curious"
+        self.emotional_state = "focused"
         self.state_history = []
         
     def evolve(self, interaction_weight=0.1):

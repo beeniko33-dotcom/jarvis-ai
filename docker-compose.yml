@@ -1,23 +1,70 @@
 services:
-  jarvis-ai:
+  app:
     build: .
-    container_name: jarvis-ai
+    container_name: jarvistrader-app
     restart: unless-stopped
     ports:
       - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:///./jarvis.db
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-supersecretkeychangeinproduction}
+      - JARVIS_HOST=0.0.0.0
+      - JARVIS_PORT=8000
+      - PYTHONUNBUFFERED=1
     volumes:
       - ./reports:/tmp
-    environment:
-      - PYTHONUNBUFFERED=1
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s
     networks:
-      - jarvis-net
+      - jarvistrader-net
+
+  # Uncomment for PostgreSQL in production
+  # db:
+  #   image: postgres:15-alpine
+  #   environment:
+  #     POSTGRES_DB: jarvistrader
+  #     POSTGRES_USER: jarvis
+  #     POSTGRES_PASSWORD: ${DB_PASSWORD:-jarvispass}
+  #   volumes:
+  #     - pgdata:/var/lib/postgresql/data
+  #   networks:
+  #     - jarvistrader-net
+
+  # Uncomment for Traefik reverse proxy (production domain)
+  # traefik:
+  #   image: traefik:v3.0
+  #   command:
+  #     - "--api.dashboard=true"
+  #     - "--providers.docker=true"
+  #     - "--entrypoints.web.address=:80"
+  #     - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+  #     - "--entrypoints.websecure.address=:443"
+  #     - "--certificatesresolvers.leresolver.acme.tlschallenge=true"
+  #     - "--certificatesresolvers.leresolver.acme.email=admin@jarvisTrader.ai"
+  #     - "--certificatesresolvers.leresolver.acme.storage=/letsencrypt/acme.json"
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #     - "8080:8080"
+  #   volumes:
+  #     - /var/run/docker.sock:/var/run/docker.sock:ro
+  #     - ./letsencrypt:/letsencrypt
+  #   networks:
+  #     - jarvistrader-net
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.jarvistrader.rule=Host(`www.jarvisTrader.ai`)"
+  #     - "traefik.http.routers.jarvistrader.entrypoints=websecure"
+  #     - "traefik.http.routers.jarvistrader.tls.certresolver=leresolver"
+  #     - "traefik.http.services.jarvistrader.loadbalancer.server.port=8000"
 
 networks:
-  jarvis-net:
+  jarvistrader-net:
     driver: bridge
+
+# volumes:
+#   pgdata:
