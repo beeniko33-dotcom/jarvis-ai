@@ -4,15 +4,25 @@ services:
     container_name: jarvistrader-app
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     environment:
-      - DATABASE_URL=sqlite:///./jarvis.db
+      - DATABASE_URL=postgresql+psycopg2://jarvistrader:${DB_PASSWORD:-jarvispass}@db:5432/jarvistrader
+      - REDIS_URL=redis://redis:6379/0
       - JWT_SECRET_KEY=${JWT_SECRET_KEY:-supersecretkeychangeinproduction}
       - JARVIS_HOST=0.0.0.0
       - JARVIS_PORT=8000
+      - RISK_SERVICE_URL=http://risk:9000
       - PYTHONUNBUFFERED=1
+      - ALLOWED_ORIGINS=https://www.jarvisTrader.ai,https://app.jarvisTrader.ai
     volumes:
       - ./reports:/tmp
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      risk:
+        condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -22,49 +32,110 @@ services:
     networks:
       - jarvistrader-net
 
-  # Uncomment for PostgreSQL in production
-  # db:
-  #   image: postgres:15-alpine
-  #   environment:
-  #     POSTGRES_DB: jarvistrader
-  #     POSTGRES_USER: jarvis
-  #     POSTGRES_PASSWORD: ${DB_PASSWORD:-jarvispass}
-  #   volumes:
-  #     - pgdata:/var/lib/postgresql/data
-  #   networks:
-  #     - jarvistrader-net
+  risk:
+    build:
+      context: .
+      dockerfile: Dockerfile.risk
+    container_name: jarvistrader-risk
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://jarvistrader:${DB_PASSWORD:-jarvispass}@db:5432/jarvistrader
+      - REDIS_URL=redis://redis:6379/0
+      - PYTHONUNBUFFERED=1
+      - PORT=9000
+    ports:
+      - "127.0.0.1:9000:9000"
+    volumes:
+      - ./reports:/tmp
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+    networks:
+      - jarvistrader-net
 
-  # Uncomment for Traefik reverse proxy (production domain)
-  # traefik:
-  #   image: traefik:v3.0
-  #   command:
-  #     - "--api.dashboard=true"
-  #     - "--providers.docker=true"
-  #     - "--entrypoints.web.address=:80"
-  #     - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
-  #     - "--entrypoints.websecure.address=:443"
-  #     - "--certificatesresolvers.leresolver.acme.tlschallenge=true"
-  #     - "--certificatesresolvers.leresolver.acme.email=admin@jarvisTrader.ai"
-  #     - "--certificatesresolvers.leresolver.acme.storage=/letsencrypt/acme.json"
-  #   ports:
-  #     - "80:80"
-  #     - "443:443"
-  #     - "8080:8080"
-  #   volumes:
-  #     - /var/run/docker.sock:/var/run/docker.sock:ro
-  #     - ./letsencrypt:/letsencrypt
-  #   networks:
-  #     - jarvistrader-net
-  #   labels:
-  #     - "traefik.enable=true"
-  #     - "traefik.http.routers.jarvistrader.rule=Host(`www.jarvisTrader.ai`)"
-  #     - "traefik.http.routers.jarvistrader.entrypoints=websecure"
-  #     - "traefik.http.routers.jarvistrader.tls.certresolver=leresolver"
-  #     - "traefik.http.services.jarvistrader.loadbalancer.server.port=8000"
+  db:
+    image: timescale/timescaledb:latest-postgres15
+    container_name: jarvistrader-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: jarvistrader
+      POSTGRES_USER: jarvistrader
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-jarvispass}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jarvistrader"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - jarvistrader-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: jarvistrader-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - jarvistrader-net
+
+  traefik:
+    image: traefik:v3.0
+    container_name: jarvistrader-traefik
+    restart: unless-stopped
+    command:
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.leresolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.leresolver.acme.email=admin@jarvisTrader.ai"
+      - "--certificatesresolvers.leresolver.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./letsencrypt:/letsencrypt
+      - ./traefik:/etc/traefik
+    networks:
+      - jarvistrader-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard.rule=Host(`traefik.jarvisTrader.ai`)"
+      - "traefik.http.routers.dashboard.entrypoints=websecure"
+      - "traefik.http.routers.dashboard.tls.certresolver=leresolver"
+      - "traefik.http.routers.dashboard.service=api@internal"
 
 networks:
   jarvistrader-net:
     driver: bridge
 
-# volumes:
-#   pgdata:
+volumes:
+  pgdata:
+  redisdata:
