@@ -1,10 +1,23 @@
-version: '3.8'
 services:
   jarvis-ai:
     build: .
+    container_name: jarvis-ai
+    restart: unless-stopped
     ports:
       - "8000:8000"
     volumes:
       - ./reports:/tmp
-    privileged: true
-    network_mode: "host"
+    environment:
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - jarvis-net
+
+networks:
+  jarvis-net:
+    driver: bridge

@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>JARVIS Forex AI — Neural Trading Platform</title>
+  <style>
+    :root {
+      --bg: #050a10;
+      --panel: #0a1420;
+      --border: #1a3a4a;
+      --accent: #00d4aa;
+      --accent2: #ffb800;
+      --danger: #ff4757;
+      --text: #e0f0f8;
+      --muted: #5a7a8a;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+    }
+    .app { display: grid; grid-template-columns: 260px 1fr 340px; min-height: 100vh; }
+    @media (max-width: 1100px) { .app { grid-template-columns: 1fr; } }
+
+    /* SIDEBAR */
+    .sidebar {
+      background: #020508;
+      border-right: 1px solid var(--border);
+      padding: 24px 18px;
+      display: flex; flex-direction: column;
+    }
+    .logo {
+      font-size: 1.6em; font-weight: 900; letter-spacing: 4px;
+      color: var(--accent);
+      text-shadow: 0 0 24px rgba(0,212,170,0.3);
+      margin-bottom: 4px;
+    }
+    .tagline { font-size: 0.7em; color: var(--muted); letter-spacing: 2px; margin-bottom: 30px; }
+    .nav { flex: 1; }
+    .nav-item {
+      padding: 12px 14px; margin-bottom: 4px;
+      border-left: 2px solid transparent;
+      color: var(--muted); cursor: pointer;
+      transition: all 0.2s;
+      font-size: 0.9em; letter-spacing: 1px;
+    }
+    .nav-item:hover, .nav-item.active {
+      background: rgba(0,212,170,0.05);
+      border-left-color: var(--accent);
+      color: var(--text);
+    }
+    .nav-item .icon { margin-right: 10px; }
+
+    /* MAIN */
+    .main { display: flex; flex-direction: column; overflow: hidden; }
+    .topbar {
+      padding: 16px 28px;
+      border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+      background: #020508;
+    }
+    .pair-title { font-size: 1.1em; font-weight: 600; }
+    .pair-title small { color: var(--muted); font-weight: 400; margin-left: 8px; }
+    .price-block { text-align: right; }
+    .price { font-size: 1.5em; font-weight: 700; }
+    .price.up { color: var(--accent); }
+    .price.down { color: var(--danger); }
+    .spark { color: var(--muted); font-size: 0.85em; }
+
+    .chart-wrap { flex: 1; position: relative; padding: 20px; }
+    .chart-title { color: var(--muted); font-size: 0.8em; letter-spacing: 2px; margin-bottom: 12px; }
+    canvas { width: 100%; height: calc(100vh - 260px); display: block; }
+
+    .candles { padding: 0 20px 10px; }
+
+    .tickerbar {
+      padding: 10px 20px;
+      border-top: 1px solid var(--border);
+      display: flex; gap: 20px;
+      background: #020508;
+      font-size: 0.85em; overflow-x: auto;
+    }
+    .tick { cursor: pointer; padding: 6px 10px; border-radius: 4px; }
+    .tick:hover { background: rgba(0,212,170,0.1); }
+    .sym { color: var(--text); font-weight: 600; }
+    .val { color: var(--muted); margin-left: 8px; }
+    .chg { font-weight: 600; margin-left: 6px; }
+    .chg.up { color: var(--accent); }
+    .chg.down { color: var(--danger); }
+
+    /* RIGHT */
+    .panel {
+      border-left: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      background: var(--panel);
+    }
+    .panel-section {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .ps-title {
+      font-size: 0.75em; letter-spacing: 2px;
+      color: var(--muted); margin-bottom: 14px;
+      text-transform: uppercase;
+    }
+    .signal-card {
+      background: rgba(0,212,170,0.08);
+      border: 1px solid rgba(0,212,170,0.2);
+      border-radius: 8px; padding: 14px;
+    }
+    .signal-badge {
+      display: inline-block; padding: 3px 10px; border-radius: 20px;
+      font-size: 0.75em; font-weight: 700; letter-spacing: 1px;
+      background: var(--accent); color: #000; margin-bottom: 8px;
+    }
+    .signal-badge.bearish { background: var(--danger); color: #fff; }
+    .signal-text { font-size: 0.85em; line-height: 1.5; color: var(--text); }
+    .confidence {
+      margin-top: 10px; font-size: 0.8em; color: var(--muted);
+    }
+    .confidence-bar {
+      height: 4px; background: #1a2a3a; border-radius: 2px; margin-top: 6px; overflow: hidden;
+    }
+    .confidence-fill { height: 100%; background: var(--accent); border-radius: 2px; }
+
+    .mind-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 0.9em; }
+    .mind-label { color: var(--muted); }
+    .mind-val { color: var(--text); font-weight: 600; }
+    .emotion-pill {
+      margin-top: 12px; padding: 8px; text-align: center;
+      border: 1px solid var(--accent); color: var(--accent);
+      border-radius: 4px; font-size: 0.9em; letter-spacing: 2px;
+      text-transform: uppercase; text-shadow: 0 0 10px rgba(0,212,170,0.4);
+    }
+
+    .terminal-box {
+      flex: 1; display: flex; flex-direction: column;
+      padding: 16px 20px; overflow: hidden;
+    }
+    .term-out {
+      flex: 1; overflow-y: auto; font-family: "Courier New", monospace;
+      font-size: 0.82em; line-height: 1.5; color: #9ab;
+    }
+    .term-out .sys { color: var(--accent); }
+    .term-out .err { color: var(--danger); }
+    .term-out .cmd { color: var(--accent2); }
+    .term-in { display: flex; margin-top: 10px; border-top: 1px solid var(--border); padding-top: 10px; }
+    .term-in .prm { color: var(--accent); margin-right: 10px; user-select: none; }
+    #cmdIn {
+      flex: 1; background: transparent; border: none; color: var(--text);
+      font-family: inherit; font-size: 0.9em; outline: none;
+    }
+
+    .scroll { overflow-y: auto; scrollbar-width: thin; scrollbar-color: #1a3a4a transparent; }
+    .scroll::-webkit-scrollbar { width: 6px; }
+    .scroll::-webkit-scrollbar-thumb { background: #1a3a4a; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="logo">J.A.R.V.I.S.</div>
+      <div class="tagline">NEURAL FOREX ENGINE v2.0</div>
+      <nav class="nav">
+        <div class="nav-item active" data-pair="EUR/USD"><span class="icon">◉</span>EUR / USD</div>
+        <div class="nav-item" data-pair="GBP/USD"><span class="icon">◉</span>GBP / USD</div>
+        <div class="nav-item" data-pair="USD/JPY"><span class="icon">◉</span>USD / JPY</div>
+        <div class="nav-item" data-pair="AUD/USD"><span class="icon">◉</span>AUD / USD</div>
+        <div class="nav-item" data-pair="BTC/USD"><span class="icon">◉</span>Bitcoin / USD</div>
+        <div style="height: 1px; background: var(--border); margin: 18px 0;"></div>
+        <div class="nav-item" onclick="showPanel('diagnostics')"><span class="icon">◈</span>Diagnostics</div>
+        <div class="nav-item" onclick="showPanel('brain')"><span class="icon">◈</span>Brain Stats</div>
+      </nav>
+      <div style="font-size: 0.75em; color: var(--muted);">© 2026 JARVIS Forex AI</div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+      <div class="topbar">
+        <div class="pair-title" id="pairTitle">EUR / USD <small>Major Pair</small></div>
+        <div class="price-block">
+          <div class="price up" id="livePrice">1.0850</div>
+          <div class="spark" id="liveSpark">+0.12% today</div>
+        </div>
+      </div>
+
+      <div class="chart-wrap">
+        <div class="chart-title">LIVE MARKET — CANDLE STREAM</div>
+        <canvas id="chart"></canvas>
+      </div>
+
+      <div class="tickerbar" id="ticker"></div>
+    </main>
+
+    <!-- RIGHT PANEL -->
+    <aside class="panel scroll">
+      <div class="panel-section">
+        <div class="ps-title">JARVIS AI SIGNAL</div>
+        <div class="signal-card" id="signalCard">
+          <div class="signal-badge" id="sigBadge">ANALYZING…</div>
+          <div class="signal-text" id="sigText">Awaiting market data stream…</div>
+          <div class="confidence">
+            Confidence: <span id="sigConf">—</span>
+            <div class="confidence-bar"><div class="confidence-fill" id="sigBar" style="width:0%"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-section" id="brainSection">
+        <div class="ps-title">CONSCIOUSNESS ENGINE</div>
+        <div class="mind-row"><span class="mind-label">Awareness</span><span class="mind-val" id="mAware">—</span></div>
+        <div class="mind-row"><span class="mind-label">Curiosity</span><span class="mind-val" id="mCurio">—</span></div>
+        <div class="mind-row"><span class="mind-label">State</span><span class="mind-val" id="mState">—</span></div>
+        <div class="emotion-pill" id="eBar">INITIALIZING…</div>
+      </div>
+
+      <div class="panel-section">
+        <div class="ps-title">TRADING TERMINAL</div>
+        <div class="mind-row"><span class="mind-label">Balance</span><span class="mind-val" id="tBal">—</span></div>
+        <div class="mind-row"><span class="mind-label">Equity</span><span class="mind-val" id="tEq">—</span></div>
+        <div class="mind-row"><span class="mind-label">Open</span><span class="mind-val" id="tOpen">0</span></div>
+        <div class="confidence-bar" style="margin: 8px 0 12px;"><div class="confidence-fill" style="width:0%" id="tPnLBar"></div></div>
+        <div style="font-size:0.8em; color:var(--muted); margin-bottom:8px;">Quick Trade</div>
+        <div style="display:flex; gap:6px; margin-bottom:8px;">
+          <select id="tPair" style="flex:1; background:#0a1a20; color:var(--text); border:1px solid var(--border); padding:6px;">
+            <option>EUR/USD</option><option>GBP/USD</option><option>USD/JPY</option><option>AUD/USD</option><option>BTC/USD</option>
+          </select>
+          <select id="tSize" style="width:70px; background:#0a1a20; color:var(--text); border:1px solid var(--border); padding:6px;">
+            <option>0.1</option><option selected>1.0</option><option>2.0</option>
+          </select>
+        </div>
+        <div style="display:flex; gap:8px; margin-bottom:12px;">
+          <button id="btnBuy" style="flex:1; background:rgba(0,212,170,0.15); border:1px solid var(--accent); color:var(--accent); padding:8px; cursor:pointer; font-weight:700;">BUY</button>
+          <button id="btnSell" style="flex:1; background:rgba(255,71,87,0.15); border:1px solid var(--danger); color:var(--danger); padding:8px; cursor:pointer; font-weight:700;">SELL</button>
+        </div>
+        <div style="font-size:0.8em; color:var(--muted); margin-bottom:8px;">History</div>
+        <div class="scroll" id="tMargin" style="max-height:220px; overflow-y:auto;">
+          <div style="font-size:0.82em; color:#5a7a8a; padding:6px 0;">No trades yet.</div>
+        </div>
+      </div>
+
+      <div class="panel-section" id="diagSection" style="display:none">
+        <div class="ps-title">SYSTEM DIAGNOSTICS</div>
+        <div class="mind-row"><span class="mind-label">CPU</span><span class="mind-val" id="dCpu">—</span></div>
+        <div class="mind-row"><span class="mind-label">Memory</span><span class="mind-val" id="dMem">—</span></div>
+        <div class="mind-row"><span class="mind-label">Uptime</span><span class="mind-val" id="dUp">—</span></div>
+      </div>
+
+      <div class="terminal-box">
+        <div class="ps-title">NEURAL TERMINAL</div>
+        <div class="term-out" id="out">
+          <span class="sys">[SYSTEM]</span> JARVIS Forex Neural Link active…<br/>
+          <span class="sys">[SYSTEM]</span> Connected to backend 8000.<br/>
+        </div>
+        <div class="term-in">
+          <span class="prm">jarvis:~$</span>
+          <input id="cmdIn" placeholder="Ask JARVIS anything..." autocomplete="off" autofocus />
+        </div>
+      </div>
+    </aside>
+  </div>
+
+<script>
+const API = "http://localhost:8000";
+const out = document.getElementById("out");
+const inp = document.getElementById("cmdIn");
+let candles = [];
+let currentPair = "EUR/USD";
+const prices = {
+  "EUR/USD": { base: 1.0850, vol: 0.0004, label: "Major" },
+  "GBP/USD": { base: 1.2740, vol: 0.0006, label: "Major" },
+  "USD/JPY": { base: 157.20, vol: 0.08, label: "Major" },
+  "AUD/USD": { base: 0.6540, vol: 0.0004, label: "Commodity" },
+  "BTC/USD": { base: 68400, vol: 120, label: "Crypto" }
+};
+
+function esc(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+function add(t, c) { const d=document.createElement("div"); d.innerHTML=`<span class="${c}">${esc(t)}</span>`; out.appendChild(d); out.scrollTop=out.scrollHeight; }
+function sys(t) { const d=document.createElement("div"); d.innerHTML=`<span class="sys">[SYSTEM]</span> ${esc(t)}`; out.appendChild(d); out.scrollTop=out.scrollHeight; }
+function err(t) { const d=document.createElement("div"); d.innerHTML=`<span class="err">[ERROR]</span> ${esc(t)}`; out.appendChild(d); out.scrollTop=out.scrollHeight; }
+
+function randn() { let u=0,v=0; while(!u)u=Math.random(); while(!v)v=Math.random(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+
+function genCandle(base, vol) {
+  const o = base + randn() * vol * 0.3;
+  const c = o + randn() * vol;
+  const h = Math.max(o, c) + Math.abs(randn()) * vol * 0.4;
+  const l = Math.min(o, c) - Math.abs(randn()) * vol * 0.4;
+  return { o, h, l, c, t: Date.now() };
+}
+
+function buildCandles(pair) {
+  const cfg = prices[pair];
+  const n = pair.includes("JPY") || pair.includes("BTC") ? 3 : 5;
+  let arr = [];
+  let base = cfg.base;
+  for (let i = 0; i < 60; i++) { const k = genCandle(base, cfg.vol); arr.push(k); base = k.c; }
+  return arr;
+}
+
+function drawChart() {
+  const canvas = document.getElementById("chart");
+  const ctx = canvas.getContext("2d");
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr; canvas.height = rect.height * dpr;
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = rect.height;
+  ctx.fillStyle = "#050a10"; ctx.fillRect(0, 0, W, H);
+
+  if (!candles.length) return;
+  const allLow = Math.min(...candles.map(c => c.l));
+  const allHigh = Math.max(...candles.map(c => c.h));
+  const range = allHigh - allLow || 0.001;
+  const padding = 20;
+  const usable = H - padding * 2;
+  const candleW = (W / candles.length) * 0.7;
+  const gap = (W / candles.length) * 0.3;
+
+  for (let i = 0; i < candles.length; i++) {
+    const x = i * (candleW + gap) + gap / 2;
+    const bull = candles[i].c >= candles[i].o;
+    const color = bull ? "#00d4aa" : "#ff4757";
+    const oY = padding + (1 - (candles[i].o - allLow) / range) * usable;
+    const cY = padding + (1 - (candles[i].c - allLow) / range) * usable;
+    const hY = padding + (1 - (candles[i].h - allLow) / range) * usable;
+    const lY = padding + (1 - (candles[i].l - allLow) / range) * usable;
+
+    ctx.strokeStyle = color; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x + candleW/2, hY); ctx.lineTo(x + candleW/2, lY); ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.fillRect(x, Math.min(oY, cY), candleW, Math.abs(cY - oY) || 1);
+
+    if (i % 5 === 0) {
+      ctx.fillStyle = "#3a5a6a"; ctx.font = "10px monospace";
+      ctx.fillText((allLow + (1 - (padding + usable - padding) / usable) * range).toFixed(candles[i].c > 100 ? 1 : 4), 4, lY);
+    }
+  }
+  // last price line
+  const last = candles[candles.length - 1].c;
+  const lastY = padding + (1 - (last - allLow) / range) * usable;
+  ctx.strokeStyle = "rgba(0,212,170,0.4)"; ctx.setLineDash([4,4]); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, lastY); ctx.lineTo(W, lastY); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = last >= candles[candles.length-1].o ? "#00d4aa" : "#ff4757";
+  ctx.font = "bold 11px monospace";
+  ctx.fillText(last.toFixed(candles.length > 0 && candles[0].c > 100 ? 1 : 4), W - 80, lastY - 6);
+}
+
+function addCandle() {
+  if (!candles.length) return;
+  const cfg = prices[currentPair];
+  const last = candles[candles.length - 1];
+  const age = Date.now() - last.t;
+  const dur = currentPair.includes("BTC") || currentPair.includes("JPY") ? 3000 : 15000;
+  if (age >= dur) { candles.push(genCandle(last.c, cfg.vol)); if (candles.length > 80) candles.shift(); updatePrice(); }
+}
+
+function updatePrice() {
+  if (!candles.length) return;
+  const last = candles[candles.length - 1].c;
+  const el = document.getElementById("livePrice");
+  el.textContent = currentPair.includes("JPY") || currentPair.includes("BTC") ? last.toFixed(1) : last.toFixed(4);
+  const change = ((last - prices[currentPair].base) / prices[currentPair].base * 100);
+  const sign = change >= 0 ? "+" : "";
+  const spark = document.getElementById("liveSpark");
+  spark.textContent = `${sign}${change.toFixed(2)}% today`;
+  el.className = "price " + (change >= 0 ? "up" : "down");
+  const title = document.getElementById("pairTitle");
+  title.innerHTML = `${currentPair} <small>${prices[currentPair].label}</small>`;
+}
+
+async function loadTicker() {
+  try {
+    const r = await fetch(`${API}/forex-portfolio`);
+    const d = await r.json();
+    const tb = document.getElementById("ticker");
+    tb.innerHTML = "";
+    d.pairs.forEach(p => {
+      const up = document.createElement("div"); up.className = "tick";
+      up.innerHTML = `<span class="sym">${p.symbol}</span><span class="val">${p.price.toFixed(p.price > 100 ? 1 : 4)}</span><span class="chg ${p.bias === 'bullish' ? 'up' : 'down'}">${(p.change * 100).toFixed(2)}%</span>`;
+      up.onclick = () => switchPair(p.symbol);
+      tb.appendChild(up);
+    });
+  } catch(e) {}
+}
+
+async function loadSignal() {
+  try {
+    const r = await fetch(`${API}/forex-signal?pair=${encodeURIComponent(currentPair)}`);
+    const d = await r.json();
+    const badge = document.getElementById("sigBadge");
+    const text = document.getElementById("sigText");
+    const conf = document.getElementById("sigConf");
+    const bar = document.getElementById("sigBar");
+    badge.textContent = d.signal;
+    badge.className = "signal-badge" + (d.signal === "SELL" ? " bearish" : "");
+    text.textContent = d.reasoning;
+    conf.textContent = (d.confidence * 100).toFixed(0) + "%";
+    bar.style.width = (d.confidence * 100) + "%";
+  } catch(e) {}
+}
+
+async function loadMind() {
+  try {
+    const r = await fetch(`${API}/diagnostic`, { signal: AbortSignal.timeout(2000) });
+    const d = await r.json();
+    document.getElementById("mAware").textContent = (d.consciousness.awareness * 100).toFixed(0) + "%";
+    document.getElementById("mCurio").textContent = (d.consciousness.curiosity * 100).toFixed(0) + "%";
+    const st = d.consciousness.emotional_state;
+    document.getElementById("mState").textContent = st.toUpperCase();
+    const bar = document.getElementById("eBar");
+    bar.textContent = st.toUpperCase();
+    bar.style.color = st === "excited" ? "var(--accent2)" : st === "focused" ? "var(--accent)" : "var(--text)";
+    bar.style.borderColor = bar.style.color;
+    if (d.diagnostics) {
+      document.getElementById("dCpu").textContent = (d.diagnostics.cpu_percent || 0).toFixed(1) + "%";
+      document.getElementById("dMem").textContent = (d.diagnostics.memory_percent || 0).toFixed(1) + "%";
+      document.getElementById("dUp").textContent = d.diagnostics.boot_time ? new Date(d.diagnostics.boot_time).toLocaleTimeString() : "—";
+    }
+  } catch(e) {}
+}
+
+async function sendCmd(cmd) {
+  add(cmd, "cmd");
+  try {
+    const r = await fetch(`${API}/command`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ command: cmd }) });
+    const d = await r.json();
+    const lines = d.response.split("\n");
+    lines.forEach((l, i) => { setTimeout(() => add(l, ""), i * 30); });
+  } catch(e) { err("Connection lost"); }
+  out.scrollTop = out.scrollHeight;
+}
+
+function switchPair(p) {
+  currentPair = p;
+  document.querySelectorAll(".nav-item").forEach(n => n.classList.toggle("active", n.dataset.pair === p));
+  candles = buildCandles(p);
+  updatePrice(); drawChart(); loadSignal();
+  sys(`Switched market feed → ${p}`);
+  inp.focus();
+}
+
+function showPanel(p) {
+  document.getElementById("diagSection").style.display = p === "diagnostics" ? "block" : "none";
+  if (p === "diagnostics") loadMind();
+}
+
+document.querySelectorAll(".nav-item[data-pair]").forEach(el => {
+  el.onclick = () => switchPair(el.dataset.pair);
+});
+
+inp.addEventListener("keydown", async (e) => {
+  if (e.key === "Enter" && inp.value.trim()) { await sendCmd(inp.value.trim()); inp.value = ""; }
+});
+
+drawChart(); candles = buildCandles("EUR/USD"); updatePrice();
+setInterval(addCandle, 1000);
+setInterval(() => { drawChart(); loadTicker(); loadSignal(); loadMind(); }, 3000);
+loadTicker(); loadSignal(); loadMind();
+setTimeout(() => sys("Type 'help' or 'analyze EUR/USD' for commands."), 1200);
+
+let openTrades = [];
+async function loadPortfolio() {
+  try {
+    const r = await fetch(`${API}/trade/portfolio`);
+    const d = await r.json();
+    document.getElementById("tBal").textContent = "$" + d.balance.toFixed(2);
+    document.getElementById("tEq").textContent = "$" + d.equity.toFixed(2);
+    document.getElementById("tOpen").textContent = d.open_positions;
+    const pnl = d.net_pnl;
+    const bar = document.getElementById("tPnLBar");
+    bar.style.width = Math.min(100, Math.max(0, 50 + pnl / 5)) + "%";
+    bar.style.background = pnl >= 0 ? "var(--accent)" : "var(--danger)";
+    if (d.total_trades > 0) sys(`Portfolio updated: $${d.balance.toFixed(2)} | PnL: ${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)} | Win rate ${d.win_rate}%`);
+  } catch(e) {}
+}
+
+async function loadHistory() {
+  try {
+    const r = await fetch(`${API}/trade/history?limit=10`);
+    const d = await r.json();
+    const el = document.getElementById("tMargin");
+    if (!d.trades.length) { el.innerHTML = '<div style="font-size:0.82em; color:#5a7a8a; padding:6px 0;">No trades yet.</div>'; return; }
+    let html = "";
+    d.trades.reverse().forEach(t => {
+      const color = t.outcome === "win" ? "var(--accent)" : t.outcome === "loss" ? "var(--danger)" : "var(--accent2)";
+      const icon = t.direction === "BUY" ? "▲" : "▼";
+      html += `<div style="display:flex; justify-content:space-between; padding:4px 6px; border-bottom:1px dotted rgba(0,204,170,0.15); font-size:0.8em;">
+        <span style="color:${color}">${icon} ${t.pair}</span>
+        <span style="color:var(--muted)">${t.size} lot</span>
+        <span style="color:${t.outcome === 'loss' ? 'var(--danger)' : 'var(--text)'}">${t.outcome === 'loss' ? '-' : '+'}$${Math.abs(t.pnl || 0).toFixed(2)}</span>
+      </div>`;
+    });
+    el.innerHTML = html;
+  } catch(e) {}
+}
+
+async function executeTrade(direction) {
+  const pair = document.getElementById("tPair").value;
+  const size = parseFloat(document.getElementById("tSize").value);
+  sys(`Executing ${direction} ${size} lot ${pair}…`);
+  try {
+    const r = await fetch(`${API}/trade/execute`, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ pair, direction, size, entry: 0 })
+    });
+    const d = await r.json();
+    if (d.success) {
+      sys(`✔ Order filled: ${d.trade.direction} ${d.trade.size} lot ${d.trade.pair} @ ${d.trade.entry}`);
+      loadPortfolio(); loadHistory();
+    } else {
+      err(`Failed: ${d.message}`);
+    }
+  } catch(e) { err("Connection lost"); }
+}
+
+document.getElementById("btnBuy").addEventListener("click", () => executeTrade("BUY"));
+document.getElementById("btnSell").addEventListener("click", () => executeTrade("SELL"));
+
+setInterval(loadPortfolio, 5000);
+setInterval(loadHistory, 12000);
+setTimeout(() => { loadPortfolio(); loadHistory(); }, 1500);
+</script>
+</body>
+</html>
