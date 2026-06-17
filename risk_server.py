@@ -47,7 +47,8 @@ MAX_EXPOSURE_USD = float(os.getenv("MAX_EXPOSURE_USD", "50000"))
 MAX_POSITION_PCT = float(os.getenv("MAX_POSITION_PCT", "2.0"))
 MAX_DAILY_LOSS_PCT = float(os.getenv("MAX_DAILY_LOSS_PCT", "5.0"))
 
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+_connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+engine = create_engine(DATABASE_URL, connect_args=_connect_args)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
