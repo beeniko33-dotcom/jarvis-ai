@@ -51,6 +51,7 @@ export default function LoginPage() {
               <option value="MCL">MCL</option>
               <option value="MT4">MT4</option>
               <option value="MT5">MT5</option>
+              <option value="DERIV">DERIV</option>
             </select>
             <input
               type="text"

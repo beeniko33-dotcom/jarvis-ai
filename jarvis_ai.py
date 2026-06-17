@@ -349,7 +349,7 @@ def login(request: Request, form: OAuth2PasswordRequestForm = Depends()):
 @app.post("/broker/connect")
 def broker_connect(req: BrokerConnectRequest):
     broker = req.broker.strip().lower()
-    allowed = {"mt4", "mt5", "mcl"}
+    allowed = {"mt4", "mt5", "mcl", "deriv"}
     if broker not in allowed:
         raise HTTPException(status_code=400, detail="Unsupported broker")
 
