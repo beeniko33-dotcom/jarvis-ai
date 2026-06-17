@@ -6,6 +6,9 @@ import DashboardPage from './pages/DashboardPage';
 import BacktesterPage from './pages/BacktesterPage';
 import OnboardingPage from './pages/OnboardingPage';
 import LiveChartPage from './pages/LiveChartPage';
+import MarketPage from './pages/MarketPage';
+import TradePage from './pages/TradePage';
+import DiagnosticPage from './pages/DiagnosticPage';
 
 export const router = createBrowserRouter([
   {
@@ -17,6 +20,9 @@ export const router = createBrowserRouter([
       { path: 'login', element: <LoginPage /> },
       { path: 'onboarding', element: <OnboardingPage /> },
       { path: 'live', element: <LiveChartPage /> },
+      { path: 'market', element: <MarketPage /> },
+      { path: 'trade', element: <TradePage /> },
+      { path: 'diagnostic', element: <DiagnosticPage /> },
     ],
   },
 ]);
