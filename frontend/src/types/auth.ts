@@ -30,6 +30,24 @@ export interface TwoFAVerifyRequest {
   code: string;
 }
 
+export interface BrokerConnectRequest {
+  broker: string;
+  username: string;
+  password: string;
+  server?: string;
+}
+
+export interface BrokerConnectResponse {
+  success: boolean;
+  profile: {
+    broker: string;
+    username: string;
+    server: string;
+    status: string;
+    connected_at: string;
+  };
+}
+
 export type UserRole = 'admin' | 'trader' | 'viewer';
 
 export interface AuthState {
@@ -47,4 +65,5 @@ export interface AuthContextType extends AuthState {
   enable2FA: () => Promise<TwoFAEnableResponse>;
   verify2FA: (code: string) => Promise<void>;
   refreshToken: () => Promise<void>;
+  brokerConnect: (req: BrokerConnectRequest) => Promise<BrokerConnectResponse>;
 }

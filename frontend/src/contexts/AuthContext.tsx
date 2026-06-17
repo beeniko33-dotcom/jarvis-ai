@@ -5,6 +5,8 @@ import type {
   RegisterRequest, 
   TokenResponse, 
   TwoFAEnableResponse,
+  BrokerConnectRequest,
+  BrokerConnectResponse,
   AuthContextType 
 } from '../types/auth';
 
@@ -97,6 +99,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(data.access_token);
   }, [token, logout]);
 
+  const brokerConnect = useCallback(async (req: BrokerConnectRequest): Promise<BrokerConnectResponse> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_URL}/broker/connect`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(req),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: 'Broker connection failed' }));
+        throw new Error((err as { detail?: string }).detail || 'Broker connection failed');
+      }
+      return res.json() as Promise<BrokerConnectResponse>;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Broker connection failed';
+      setError(msg);
+      throw e;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -110,6 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       enable2FA,
       verify2FA,
       refreshToken,
+      brokerConnect,
     }}>
       {children}
     </AuthContext.Provider>

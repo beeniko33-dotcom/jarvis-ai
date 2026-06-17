@@ -276,6 +276,13 @@ class BacktestRequest(BaseModel):
     strategy: str = Field("sma_crossover", min_length=1)
 
 
+class BrokerConnectRequest(BaseModel):
+    broker: str = Field(..., min_length=1)
+    username: str = Field(..., min_length=1)
+    password: str = Field(..., min_length=1)
+    server: Optional[str] = None
+
+
 # Health
 @app.get("/health")
 def health():
@@ -337,6 +344,23 @@ def login(request: Request, form: OAuth2PasswordRequestForm = Depends()):
     if not user or user["password"] != form.password:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     return {"access_token": make_token(user["username"]), "token_type": "bearer"}
+
+
+@app.post("/broker/connect")
+def broker_connect(req: BrokerConnectRequest):
+    broker = req.broker.strip().lower()
+    allowed = {"mt4", "mt5", "mcl"}
+    if broker not in allowed:
+        raise HTTPException(status_code=400, detail="Unsupported broker")
+
+    profile = {
+        "broker": broker,
+        "username": req.username,
+        "server": req.server or f"{broker}.connect",
+        "status": "connected",
+        "connected_at": datetime.utcnow().isoformat(),
+    }
+    return {"success": True, "profile": profile}
 
 
 @app.post("/register")
