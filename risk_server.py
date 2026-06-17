@@ -11,14 +11,29 @@ from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
 
-import redis
 from fastapi import FastAPI, HTTPException, Depends, Header
 from pydantic import BaseModel, Field
 from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Boolean, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
-from cryptography.fernet import Fernet
-import ccxt
+
+try:
+    import redis
+    HAS_REDIS = True
+except ImportError:
+    HAS_REDIS = False
+
+try:
+    from cryptography.fernet import Fernet
+    HAS_CRYPTO = True
+except ImportError:
+    HAS_CRYPTO = False
+
+try:
+    import ccxt
+    HAS_CCXT = True
+except ImportError:
+    HAS_CCXT = False
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("jarvis.risk")
@@ -35,8 +50,15 @@ MAX_DAILY_LOSS_PCT = float(os.getenv("MAX_DAILY_LOSS_PCT", "5.0"))
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
-redis_client = redis.from_url(REDIS_URL, decode_responses=True)
-cipher = Fernet(Fernet.generate_key())
+
+if HAS_REDIS:
+    redis_client = redis.from_url(REDIS_URL, decode_responses=True)
+else:
+    redis_client = None
+
+cipher = None
+if HAS_CRYPTO:
+    cipher = Fernet(Fernet.generate_key())
 
 
 class PositionDB(Base):
@@ -133,6 +155,8 @@ class RiskEngine:
         self._load_state()
 
     def _load_state(self):
+        if redis_client is None:
+            return
         try:
             raw = redis_client.get("risk_engine_state")
             if raw:
@@ -143,6 +167,8 @@ class RiskEngine:
             logger.warning(f"State load failed: {exc}")
 
     def _persist_state(self):
+        if redis_client is None:
+            return
         try:
             data = {
                 "user_states": {uid: s.__dict__ for uid, s in self.user_states.items()},
@@ -188,14 +214,15 @@ class RiskEngine:
         notional = abs(size * mark_price)
         if notional > MAX_EXPOSURE_USD:
             return False, f"Exposure limit exceeded: ${notional:,.2f} > ${MAX_EXPOSURE_USD:,.2f}"
-        key = f"exposure:{user_id}:{symbol}:{side}"
-        try:
-            current = float(redis_client.get(key) or 0)
-            if current + notional > MAX_EXPOSURE_USD:
-                return False, f"Symbol exposure limit exceeded for {symbol}"
-            redis_client.setex(key, 3600, str(current + notional))
-        except Exception as exc:
-            logger.warning(f"Exposure check failed: {exc}")
+        if redis_client is not None:
+            key = f"exposure:{user_id}:{symbol}:{side}"
+            try:
+                current = float(redis_client.get(key) or 0)
+                if current + notional > MAX_EXPOSURE_USD:
+                    return False, f"Symbol exposure limit exceeded for {symbol}"
+                redis_client.setex(key, 3600, str(current + notional))
+            except Exception as exc:
+                logger.warning(f"Exposure check failed: {exc}")
         return True, "OK"
 
     def record_trade(self, user_id: str, pnl: float):

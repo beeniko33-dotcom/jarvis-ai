@@ -1,7 +1,7 @@
 FROM node:20-alpine AS frontend-builder
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
-RUN npm install
+RUN npm install --production=false
 COPY frontend/ .
 RUN npm run build
 
@@ -13,7 +13,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY jarvis_ai.py consciousness_engine.py hacking_brain.py risk_manager.py backtest_engine.py risk_server.py ./
+COPY jarvis_ai.py consciousness_engine.py hacking_brain.py risk_manager.py backtest_engine.py risk_server.py dsa.py ./
 COPY --from=frontend-builder /app/frontend/dist ./static
 
 EXPOSE 8000
