@@ -515,6 +515,15 @@ def execute_trade(request: Request, req: TradeRequest, username: str = Depends(c
     }
     trade_store["trades"].append(trade)
     trade_store["open_positions"].append(trade)
+    position_buffer.push({
+        "id": trade["id"],
+        "pair": pair,
+        "direction": direction,
+        "size": size,
+        "entry": entry,
+        "status": "open",
+        "timestamp": datetime.utcnow().isoformat(),
+    })
     trade_store["balance"] -= size * 1000
     trade_store["equity"] = trade_store["balance"] + sum(t.get("floating", 0.0) for t in trade_store["open_positions"])
     return {"success": True, "trade": trade}
