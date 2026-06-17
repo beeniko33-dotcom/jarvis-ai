@@ -725,6 +725,45 @@ async def startup_event():
     asyncio.create_task(broadcast_prices())
 
 
+class SignalInitializeRequest(BaseModel):
+    pair: str = Field(..., pattern=PAIR_PATTERN)
+    timeframe: str = Field("1m", min_length=1, max_length=4)
+    strategy: str = Field("sma_crossover", min_length=1)
+    initial_capital: float = Field(10000.0, gt=0)
+    risk_percent: float = Field(1.0, gt=0, le=100)
+    session_name: Optional[str] = Field("default-onboarding-2026")
+
+
+@app.post("/signal/initialize")
+def signal_initialize(req: SignalInitializeRequest, username: str = Depends(current_user)):
+    pair = validate_pair_value(req.pair)
+    tf = normalize_timeframe(req.timeframe)
+    signal = forex_signal(pair)
+    candles = simulated_candles(pair, tf, 200)
+    from backtest_engine import run_backtest, sma_crossover_strategy
+    backtest = run_backtest(sma_crossover_strategy, candles, req.initial_capital)
+    summary = {
+        "session": req.session_name,
+        "user": username,
+        "year": 2026,
+        "pair": pair,
+        "timeframe": tf,
+        "strategy": req.strategy,
+        "initial_capital": req.initial_capital,
+        "risk_percent": req.risk_percent,
+        "signal": signal,
+        "backtest_summary": {
+            "net_pnl": backtest.get("net_pnl"),
+            "return_pct": backtest.get("return_pct"),
+            "win_rate": backtest.get("win_rate"),
+            "max_drawdown_pct": backtest.get("max_drawdown_pct"),
+            "total_trades": backtest.get("total_trades"),
+        },
+        "status": "initialized",
+    }
+    return summary
+
+
 @app.get("/ui")
 async def web_ui():
     return FileResponse("static/index.html")
