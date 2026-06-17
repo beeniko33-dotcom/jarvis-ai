@@ -21,6 +21,30 @@ export default defineConfig({
         target: 'http://localhost:8000',
         changeOrigin: true,
       },
+      '/signal': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/broker': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/diagnostic': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/brain-stats': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/forex': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/command': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
       '/risk': {
         target: 'http://localhost:8000',
         changeOrigin: true,

@@ -9,11 +9,14 @@ services:
       - DATABASE_URL=postgresql+psycopg2://jarvistrader:${DB_PASSWORD:-jarvispass}@db:5432/jarvistrader
       - REDIS_URL=redis://redis:6379/0
       - JWT_SECRET_KEY=${JWT_SECRET_KEY:-supersecretkeychangeinproduction}
+      - APP_DOMAIN=${APP_DOMAIN:-www.jarvisTrader.ai}
+      - APP_BASE_DOMAIN=${APP_BASE_DOMAIN:-jarvisTrader.ai}
+      - API_DOMAIN=${API_DOMAIN:-api.jarvisTrader.ai}
       - JARVIS_HOST=0.0.0.0
       - JARVIS_PORT=8000
       - RISK_SERVICE_URL=http://risk:9000
       - PYTHONUNBUFFERED=1
-      - ALLOWED_ORIGINS=https://www.jarvisTrader.ai,https://app.jarvisTrader.ai
+      - ALLOWED_ORIGINS=https://www.jarvisTrader.ai,https://api.jarvisTrader.ai,https://app.jarvisTrader.ai,http://localhost:5173,http://localhost:5174,http://localhost:8000
     volumes:
       - ./reports:/tmp
     depends_on:
@@ -23,6 +26,16 @@ services:
         condition: service_healthy
       risk:
         condition: service_started
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.jarvistrader-web.rule=Host(`${APP_DOMAIN:-www.jarvisTrader.ai}`)"
+      - "traefik.http.routers.jarvistrader-web.entrypoints=websecure"
+      - "traefik.http.routers.jarvistrader-web.tls.certresolver=leresolver"
+      - "traefik.http.routers.jarvistrader-api.rule=Host(`${API_DOMAIN:-api.jarvisTrader.ai}`)"
+      - "traefik.http.routers.jarvistrader-api.entrypoints=websecure"
+      - "traefik.http.routers.jarvistrader-api.tls.certresolver=leresolver"
+      - "traefik.http.services.jarvistrader-web.loadbalancer.server.port=8000"
+      - "traefik.http.services.jarvistrader-api.loadbalancer.server.port=8000"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
