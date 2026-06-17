@@ -602,7 +602,7 @@ def run_backtest_endpoint(req: BacktestRequest):
         candles = simulated_candles(req.pair, req.timeframe, 200)
     if req.strategy == "sma_crossover":
         from backtest_engine import run_backtest, sma_crossover_strategy
-        result = run_backtest(sma_crossover_strategy, candles, req.initial_capital)
+        result = run_backtest(candles, sma_crossover_strategy, req.initial_capital)
     else:
         raise HTTPException(status_code=400, detail="Unsupported strategy")
     result_id = str(uuid.uuid4())
@@ -751,7 +751,7 @@ def signal_initialize(req: SignalInitializeRequest, username: str = Depends(curr
     signal = forex_signal(pair)
     candles = simulated_candles(pair, tf, 200)
     from backtest_engine import run_backtest, sma_crossover_strategy
-    backtest = run_backtest(sma_crossover_strategy, candles, req.initial_capital)
+    backtest = run_backtest(candles, sma_crossover_strategy, req.initial_capital)
     summary = {
         "session": req.session_name,
         "user": username,

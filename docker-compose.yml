@@ -62,7 +62,7 @@ services:
       - jarvistrader-net
 
   db:
-    image: timescale/timescaledb:latest-postgres15
+    image: timescale/timescaledb:latest-pg15
     container_name: jarvistrader-db
     restart: unless-stopped
     environment:
