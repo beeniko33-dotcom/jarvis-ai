@@ -9,6 +9,11 @@ import LiveChartPage from './pages/LiveChartPage';
 import MarketPage from './pages/MarketPage';
 import TradePage from './pages/TradePage';
 import DiagnosticPage from './pages/DiagnosticPage';
+import PortfolioPage from './pages/PortfolioPage';
+import SignalPage from './pages/SignalPage';
+import RiskPage from './pages/RiskPage';
+import ExchangePage from './pages/ExchangePage';
+import CommandPage from './pages/CommandPage';
 
 export const router = createBrowserRouter([
   {
@@ -22,6 +27,11 @@ export const router = createBrowserRouter([
       { path: 'live', element: <LiveChartPage /> },
       { path: 'market', element: <MarketPage /> },
       { path: 'trade', element: <TradePage /> },
+      { path: 'portfolio', element: <PortfolioPage /> },
+      { path: 'signal', element: <SignalPage /> },
+      { path: 'risk', element: <RiskPage /> },
+      { path: 'exchange', element: <ExchangePage /> },
+      { path: 'command', element: <CommandPage /> },
       { path: 'diagnostic', element: <DiagnosticPage /> },
     ],
   },

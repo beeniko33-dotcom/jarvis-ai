@@ -6,3 +6,8 @@ export { default as LiveChartPage } from './LiveChartPage';
 export { default as MarketPage } from './MarketPage';
 export { default as TradePage } from './TradePage';
 export { default as DiagnosticPage } from './DiagnosticPage';
+export { default as PortfolioPage } from './PortfolioPage';
+export { default as SignalPage } from './SignalPage';
+export { default as RiskPage } from './RiskPage';
+export { default as ExchangePage } from './ExchangePage';
+export { default as CommandPage } from './CommandPage';
