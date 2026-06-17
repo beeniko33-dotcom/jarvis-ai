@@ -11,3 +11,4 @@ export { default as SignalPage } from './SignalPage';
 export { default as RiskPage } from './RiskPage';
 export { default as ExchangePage } from './ExchangePage';
 export { default as CommandPage } from './CommandPage';
+export { default as BrainStatsPage } from './BrainStatsPage';

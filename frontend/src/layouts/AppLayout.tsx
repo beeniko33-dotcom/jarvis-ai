@@ -17,6 +17,7 @@ export default function AppLayout() {
           <Link to="/risk">Risk</Link>
           <Link to="/exchange">Exchange</Link>
           <Link to="/command">Command</Link>
+          <Link to="/brain">Brain</Link>
           <Link to="/diagnostic">Diagnostic</Link>
         </nav>
         <span className="badge">www.jarvisTrader.ai</span>

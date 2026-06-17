@@ -14,6 +14,7 @@ import SignalPage from './pages/SignalPage';
 import RiskPage from './pages/RiskPage';
 import ExchangePage from './pages/ExchangePage';
 import CommandPage from './pages/CommandPage';
+import BrainStatsPage from './pages/BrainStatsPage';
 
 export const router = createBrowserRouter([
   {
@@ -32,6 +33,7 @@ export const router = createBrowserRouter([
       { path: 'risk', element: <RiskPage /> },
       { path: 'exchange', element: <ExchangePage /> },
       { path: 'command', element: <CommandPage /> },
+      { path: 'brain', element: <BrainStatsPage /> },
       { path: 'diagnostic', element: <DiagnosticPage /> },
     ],
   },
