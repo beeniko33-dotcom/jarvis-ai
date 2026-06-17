@@ -25,6 +25,7 @@ from consciousness_engine import ConsciousnessEngine
 from hacking_brain import HackingBrain
 from risk_manager import RiskManager, RiskViolation as RiskLimitError
 from backtest_engine import normalize_timeframe, simulated_candles, ccxt_symbol
+from dsa import PointByPointBuffer
 
 load_dotenv()
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
