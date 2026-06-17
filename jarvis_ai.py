@@ -25,7 +25,7 @@ from consciousness_engine import ConsciousnessEngine
 from hacking_brain import HackingBrain
 from risk_manager import RiskManager, RiskViolation as RiskLimitError
 from backtest_engine import normalize_timeframe, simulated_candles, ccxt_symbol
-from dsa import PointByPointBuffer
+from dsa import PositionBuffer, PointByPointBuffer, Point
 
 load_dotenv()
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
@@ -173,6 +173,7 @@ hacking = HackingBrain()
 risk_manager = RiskManager(initial_balance=10000.0)
 
 trade_store = {"trades": [], "balance": 10000.0, "equity": 10000.0, "open_positions": []}
+position_buffer = PositionBuffer()
 price_memory = {
     "EUR/USD": 1.0850, "GBP/USD": 1.2740, "USD/JPY": 157.20,
     "AUD/USD": 0.6540, "BTC/USD": 68400, "BTC/USDT": 68400,
