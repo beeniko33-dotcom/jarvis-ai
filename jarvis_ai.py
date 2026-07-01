@@ -26,6 +26,17 @@ from hacking_brain import HackingBrain
 from risk_manager import RiskManager, RiskViolation as RiskLimitError
 from backtest_engine import normalize_timeframe, simulated_candles, ccxt_symbol
 from dsa import PositionBuffer, PointByPointBuffer, Point
+try:
+    from plugins import plugin_manager
+    PLUGINS_AVAILABLE = True
+except ImportError:
+    PLUGINS_AVAILABLE = False
+try:
+    from virtuality import VirtualEvolutionManager
+    VIRTUALITY_AVAILABLE = True
+except ImportError:
+    from virtualization import VirtualEvolutionManager
+    VIRTUALITY_AVAILABLE = True
 
 load_dotenv()
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
@@ -802,6 +813,74 @@ def signal_initialize(req: SignalInitializeRequest, username: str = Depends(curr
 @app.get("/ui")
 async def web_ui():
     return FileResponse("static/index.html")
+
+
+class PluginRequest(BaseModel):
+    name: str = Field(..., min_length=1)
+    params: Optional[Dict[str, Any]] = None
+
+
+@app.get("/plugins/list")
+def list_plugins():
+    if PLUGINS_AVAILABLE:
+        return {"plugins": plugin_manager.list_plugins(), "count": len(plugin_manager.list_plugins())}
+    return {"plugins": [], "message": "Plugin system not available"}
+
+
+@app.post("/plugins/execute")
+def execute_plugin(req: PluginRequest, username: str = Depends(current_user)):
+    if not PLUGINS_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Plugin system not available")
+    plugin = plugin_manager.get(req.name)
+    if not plugin:
+        raise HTTPException(status_code=404, detail=f"Plugin '{req.name}' not found")
+    try:
+        result = plugin.analyze(req.params.get("pair") if req.params else None)
+        return {"success": True, "result": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class VirtualSpawnRequest(BaseModel):
+    name: str = Field(..., min_length=1)
+    skills: Optional[List[str]] = None
+
+
+class VirtualQueryRequest(BaseModel):
+    vid: str = Field(..., min_length=1)
+    input: str = Field(..., min_length=1)
+
+
+virtual_manager = VirtualEvolutionManager()
+
+
+@app.post("/virtual/spawn")
+def spawn_virtual_assistant(req: VirtualSpawnRequest, username: str = Depends(current_user)):
+    vid = virtual_manager.spawn_assistant(req.name, req.skills)
+    return {"success": True, "vid": vid, "name": req.name, "skills": req.skills or []}
+
+
+@app.post("/virtual/query")
+def query_virtual_assistant(req: VirtualQueryRequest, username: str = Depends(current_user)):
+    response = virtual_manager.query_assistant(req.vid, req.input)
+    return {"success": True, "vid": req.vid, "response": response}
+
+
+@app.post("/virtual/evolve")
+def evolve_virtual_assistants(username: str = Depends(current_user)):
+    virtual_manager.evolve_all()
+    return {"success": True, "created": len(virtual_manager.assistants)}
+
+
+@app.get("/virtual/list")
+def list_virtual_assistants():
+    return {
+        "assistants": [
+            {"id": va.id, "name": va.name, "awareness": round(va.awareness, 3), "curiosity": round(va.curiosity, 3)}
+            for va in virtual_manager.assistants.values()
+        ],
+        "count": len(virtual_manager.assistants)
+    }
 
 
 if __name__ == "__main__":

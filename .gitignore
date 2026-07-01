@@ -8,3 +8,7 @@ __pycache__/
 *.log
 reports/
 node_modules/
+frontend/dist/
+*.db
+letsencrypt/
+

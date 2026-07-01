@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <rect width="1200" height="630" fill="#080c10"/>
+  <rect x="0" y="0" width="1200" height="630" fill="linear-gradient(135deg, #080c10 0%, #161b22 50%, #0d1117 100%)"/>
+  <g transform="translate(600, 250)">
+    <rect x="-80" y="-80" width="160" height="160" rx="30" fill="#f0b90b"/>
+    <text x="0" y="20" font-family="Arial, sans-serif" font-size="80" font-weight="900" text-anchor="middle" fill="#000">J</text>
+  </g>
+  <text x="600" y="380" font-family="Arial, sans-serif" font-size="60" font-weight="700" text-anchor="middle" fill="#eaecef">JARVIS Trader AI</text>
+  <text x="600" y="440" font-family="Arial, sans-serif" font-size="28" text-anchor="middle" fill="#848e9c">Neural Forex Trading Platform</text>
+  <text x="600" y="580" font-family="Arial, sans-serif" font-size="20" text-anchor="middle" fill="#58a6ff">www.jarvisTrader.ai</text>
+</svg>

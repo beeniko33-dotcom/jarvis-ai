@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <rect width="192" height="192" rx="32" fill="#080c10"/>
+  <rect x="32" y="32" width="128" height="128" rx="24" fill="linear-gradient(135deg, #f0b90b, #f8d12f)"/>
+  <text x="96" y="120" font-family="Arial, sans-serif" font-size="80" font-weight="900" text-anchor="middle" fill="#000">J</text>
+</svg>

@@ -145,6 +145,20 @@ services:
       - "traefik.http.routers.dashboard.tls.certresolver=leresolver"
       - "traefik.http.routers.dashboard.service=api@internal"
 
+  grafana:
+    image: grafana/grafana:10
+    container_name: jarvistrader-grafana
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-jarvisadmin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafanadata:/var/lib/grafana
+    networks:
+      - jarvistrader-net
+
 networks:
   jarvistrader-net:
     driver: bridge
@@ -152,3 +166,4 @@ networks:
 volumes:
   pgdata:
   redisdata:
+  grafanadata:
