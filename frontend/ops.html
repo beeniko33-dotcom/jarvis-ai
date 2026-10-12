@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Jarvis AI — Ops</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #0b1020; color: #e8eeff; padding: 24px; max-width: 800px; }
+    .card { background: #151c33; border-radius: 12px; padding: 16px; margin: 12px 0; }
+    code { background: #0b1020; padding: 2px 6px; border-radius: 4px; }
+    a { color: #7c9cff; }
+    .warn { color: #f5c542; }
+  </style>
+</head>
+<body>
+  <h1>Jarvis AI — Operations</h1>
+  <p>Backend / risk / compose stack</p>
+  <div class="card">
+    <h3>Typical services (docker compose)</h3>
+    <ul>
+      <li>App API — port 8000</li>
+      <li>Risk service — port 9000</li>
+      <li>Postgres / Redis / Traefik / Grafana</li>
+    </ul>
+    <pre>docker compose up -d</pre>
+    <p class="warn">Change all default passwords before any deployment (see PRODUCTION.md).</p>
+  </div>
+  <div class="card">
+    <h3>Health checks (when running)</h3>
+    <ul>
+      <li><code>http://127.0.0.1:8000/health</code></li>
+      <li><code>http://127.0.0.1:9000/health</code></li>
+    </ul>
+  </div>
+  <p>Trading signals primary UI: <a href="https://github.com/beeniko33-dotcom/jarvis-trader-ecosystem">jarvis-trader-ecosystem</a> status dashboard.</p>
+</body>
+</html>
