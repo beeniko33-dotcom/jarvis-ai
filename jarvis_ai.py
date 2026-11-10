@@ -1,4 +1,5 @@
 import os
+import uuid
 import random
 import json
 import time
@@ -24,7 +25,7 @@ from dotenv import load_dotenv
 from consciousness_engine import ConsciousnessEngine
 from hacking_brain import HackingBrain
 from risk_manager import RiskManager, RiskViolation as RiskLimitError
-from backtest_engine import normalize_timeframe, simulated_candles, ccxt_symbol
+from backtest_engine import normalize_timeframe, simulated_candles, ccxt_symbol, load_candles
 from dsa import PositionBuffer, PointByPointBuffer, Point
 try:
     from plugins import plugin_manager
@@ -632,7 +633,7 @@ def run_simulation(pair: str = "EUR/USD", count: int = 5, username: str = Depend
 @app.post("/backtest/run")
 def run_backtest_endpoint(req: BacktestRequest):
     try:
-        candles = backtest_load_candles(req.pair, req.timeframe, req.start.isoformat(), req.end.isoformat())
+        candles = load_candles(req.pair, req.timeframe, req.start.isoformat(), req.end.isoformat())
     except Exception as exc:
         logger.warning(f"Backtest candle fallback: {exc}")
         candles = simulated_candles(req.pair, req.timeframe, 200)
